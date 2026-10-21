@@ -1,5 +1,10 @@
-BASE GAME (incl. triggered bonuses) {"n":5000000,"rtp":97.03,"bonusShare":32.68,"hitRate":38.72,"maxWinX":10000,"capHits":5,"stdDev":19.8,"ci95":1.74,"bonus1in":[247,5543,384615],"anyBonus1in":237,"dist":{"<5x":4870859,"5 to 20x":99734,"20 to 100x":24590,"100 to 1000x":4651,"1000x+":166}}
-BUY BREAK IN @70x: trigger 1 in 248, avg 67.9x, buy RTP 96.97%, max 10000x, cap hits 90/1000000, sd 218.9
-BUY INSIDE JOB @235x: trigger 1 in 5860, avg 226.4x, buy RTP 96.35%, max 10000x, cap hits 2050/1000000, sd 714.7
-BUY KINGPIN @1020x: trigger 1 in 346359, avg 984.9x, buy RTP 96.56%, max 10000x, cap hits 32643/1000000, sd 2182.4
-Blended RTP estimate 95.88% | bonus EVs 67.9x / 226.4x / 984.9x | max win cap 10000x
+BASE GAME (incl. triggered bonuses) {"n":2000000,"rtp":96.77,"bonusShare":36.46,"hitRate":39.07,"maxWinX":50000,"capHits":1,"stdDev":49.3,"ci95":6.83,"bonus1in":[235,5391,400000],"anyBonus1in":225,"dist":{"<5x":1946297,"5 to 20x":43545,"20 to 100x":8817,"100 to 1000x":1276,"1000x+":65}}
+BUY AFTER HOURS @72x: trigger 1 in 239, avg 71.8x, buy RTP 99.75%, max 50000x, cap hits 22/300000, sd 606.7
+BUY MIDNIGHT RUN @350x: trigger 1 in 5575, avg 341.5x, buy RTP 97.57%, max 50000x, cap hits 190/300000, sd 1795.4
+BUY HOUSE TAKEOVER @1680x: trigger 1 in 324986, avg 1585.2x, buy RTP 94.36%, max 50000x, cap hits 1830/300000, sd 5152.1
+Blended RTP estimate 96.96% | bonus EVs 71.8x / 341.5x / 1585.2x | max win cap 50000x
+BASE GAME (incl. triggered bonuses) {"n":2000000,"rtp":96.2,"bonusShare":36.03,"hitRate":39.1,"maxWinX":29223.7,"capHits":0,"stdDev":37.8,"ci95":5.24,"bonus1in":[239,5249,500000],"anyBonus1in":228,"dist":{"<5x":1946609,"5 to 20x":43396,"20 to 100x":8610,"100 to 1000x":1332,"1000x+":53}}
+BUY AFTER HOURS @74x: trigger 1 in 239, avg 71.1x, buy RTP 96.14%, max 50000x, cap hits 16/300000, sd 553.6
+BUY MIDNIGHT RUN @354x: trigger 1 in 5575, avg 347.4x, buy RTP 98.15%, max 50000x, cap hits 217/300000, sd 1856.6
+BUY HOUSE TAKEOVER @1640x: trigger 1 in 324986, avg 1603.5x, buy RTP 97.77%, max 50000x, cap hits 1914/300000, sd 5239.6
+Blended RTP estimate 96.65% | bonus EVs 71.1x / 347.4x / 1603.5x | max win cap 50000x
