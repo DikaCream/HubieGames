@@ -40,7 +40,7 @@ function tex(img: HTMLImageElement, mode: 'plain' | 'blur' | 'split', sym = -1, 
   else if (mode === 'blur') { const t = document.createElement('canvas'); t.width = t.height = W; drawFramed(t.getContext('2d')!, img, sym, card, 0, 0, W);
     for (let i = 0; i < 12; i++) { x.globalAlpha = .18; x.drawImage(t, 0, (i / 11 - .5) * W * .5); } }
   else { const h = W * .54; drawFramed(x, img, sym, card, 0, 0, h); drawFramed(x, img, sym, card, W - h, W - h, h);
-    x.strokeStyle = '#02F7FD'; x.lineWidth = 3 * R; x.globalAlpha = .8; x.beginPath(); x.moveTo(W * .92, W * .08); x.lineTo(W * .08, W * .92); x.stroke(); }
+    x.strokeStyle = '#02F7FD'; x.lineWidth = 1.5 * R; x.globalAlpha = .35; x.beginPath(); x.moveTo(W * .92, W * .08); x.lineTo(W * .08, W * .92); x.stroke(); }
   return Texture.from(cv);
 }
 function dotTex() { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d')!; const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -187,7 +187,7 @@ export class Board {
   /** Runners move to their new cells; on a split reel they double (badge punch). */
   async moveRunners(list: Runner[], first: boolean) {
     while (this.runners.length < list.length) { const c = new Container(); const s = new Sprite(this.T.runner); s.anchor.set(.5); s.width = s.height = C * .98; c.addChild(s);
-      const b = badge('x1', 0x02f7fd, 24); b.y = C * .36; c.addChild(b); const p = this.pos(2, 2); c.x = p.x; c.y = p.y; c.scale.set(0); this.runL.addChild(c); this.runners.push({ c, b, m: 1 }); }
+      const b = badge('x1', 0x02f7fd, 20); b.x = C * .28; b.y = -C * .32; b.visible = false; c.addChild(b); const p = this.pos(2, 2); c.x = p.x; c.y = p.y; c.scale.set(0); this.runL.addChild(c); this.runners.push({ c, b, m: 1 }); }
     await Promise.all(list.map(async (rn, i) => { const R = this.runners[i]; const p = this.pos(rn.r, rn.row);
       if (first || R.c.scale.x === 0) { R.c.x = p.x; R.c.y = p.y; await gsap.to(R.c.scale, { x: 1, y: 1, duration: .35, ease: 'back.out(2.5)' }); }
       else { sfx.whoosh(); const x0 = R.c.x, y0 = R.c.y, o = { k: 0 }; const h = 60 + Math.hypot(p.x - x0, p.y - y0) * .35;
@@ -198,7 +198,7 @@ export class Board {
       if (rn.doubled) { await wait(i * 160); const sb = await this.slamMult(rn.r, rn.row, 'x' + rn.m); sb.destroy(); sfx.mult(Math.log2(rn.m)); this.setBadge(R, rn.m); this.burst(p.x, p.y, 24, 0xf5c542, 1.3); gsap.fromTo(R.c.scale, { x: 1.35, y: 1.35 }, { x: 1, y: 1, duration: .4, ease: 'back.out(3)' }); }
       else this.setBadge(R, rn.m); }));
   }
-  private setBadge(R: { c: Container; b: Container; m: number }, m: number) { if (R.m === m && R.b.parent) return; R.m = m; R.b.destroy(); const b = badge('x' + m, m > 1 ? 0xf5c542 : 0x02f7fd, 24); b.y = C * .36; R.c.addChild(b); R.b = b; gsap.from(b.scale, { x: 1.8, y: 1.8, duration: .3, ease: 'back.out(3)' }); }
+  private setBadge(R: { c: Container; b: Container; m: number }, m: number) { if (R.m === m && R.b.parent) return; R.m = m; R.b.destroy(); const b = badge('x' + m, 0xf5c542, 20); b.x = C * .28; b.y = -C * .32; b.visible = m > 1; R.c.addChild(b); R.b = b; gsap.from(b.scale, { x: 1.8, y: 1.8, duration: .3, ease: 'back.out(3)' }); }
   clearRunners() { this.runners.forEach(r => r.c.destroy({ children: true })); this.runners = []; }
   /** Mystery Symbol: key cells turn into envelopes, then reveal the marked symbol and its multiplier. */
   async mystery(sp: Spin, sym: number, mult: number) {
@@ -211,40 +211,52 @@ export class Board {
       const b = badge('x' + mult, 0xf5c542, 26); b.x = p.x + C * .26; b.y = p.y + C * .34; this.fxL.addChild(b); bs.push(b); gsap.from(b.scale, { x: 0, y: 0, duration: .35, ease: 'back.out(3)' }); }
     sfx.tierUp(1); await wait(this.turbo ? 500 : 1200); bs.forEach(b => b.destroy());
   }
-  /** Win presentation: dim others, punch + shine + idle loop on winners, glowing way lines. */
-  showWins(sp: Spin, labels: string[] = []) {
+  private ways: Set<string>[] = []; private deco = new Map<string, Container[]>(); private cyc = 0;
+  /** Win presentation: dim others, punch + shine + gold frame on winners. No lines, no labels on the board. */
+  showWins(sp: Spin) {
     if (!sp.wins.length) return; sfx.hit(sp.win);
-    const colors = [0xf5c542, 0x02f7fd, 0xff8a3d, 0x7dffb3]; const hit = new Set<string>();
+    const hit = new Set<string>(); this.ways = [];
     const runAt = (r: number, row: number) => sp.runners.some(x => x.r === r && x.row === row);
-    sp.wins.forEach((w, wi) => {
+    sp.wins.forEach(w => {
       const rows = (r: number) => [0, 1, 2, 3, 4].filter(row => { if (runAt(r, row)) return true; const c = sp.grid[r][row]; if (!c) return false;
+        if ((row === 0 || row === 4) && !this.reels[r].vault[row === 0 ? 0 : 1].open) return false;
         return c.s === w.sym || c.s === S.WILD || c.s === S.DWILD || (c.s === S.EXPAND && c.x === w.sym); });
-      const g = new Graphics(); this.winL.addChild(g);
-      for (let r = 0; r < w.len; r++) for (const row of rows(r)) hit.add(r + ':' + row);
-      for (let r = 0; r < w.len - 1; r++) for (const a of rows(r)) for (const b of rows(r + 1)) { const A = this.pos(r, a), B = this.pos(r + 1, b);
-        g.moveTo(A.x, A.y).lineTo(B.x, B.y).stroke({ color: colors[wi % 4], width: 12, alpha: .22 }); g.moveTo(A.x, A.y).lineTo(B.x, B.y).stroke({ color: colors[wi % 4], width: 3.5, alpha: .95 }); }
-      g.alpha = 0; gsap.to(g, { alpha: 1, duration: .25, delay: wi * .18 });
-      if (labels[wi]) { const lr = w.len - 1, rr = rows(lr)[0] ?? 2; const P = this.pos(lr, rr); const L = badge(labels[wi], colors[wi % 4], 26); L.x = P.x; L.y = P.y - C * .42; L.alpha = 0; this.winL.addChild(L);
-        gsap.to(L, { alpha: 1, y: L.y - 18, duration: .4, delay: .15 + wi * .18, ease: 'back.out(2)' }); }
+      const set = new Set<string>(); for (let r = 0; r < w.len; r++) for (const row of rows(r)) { hit.add(r + ':' + row); set.add(r + ':' + row); } this.ways.push(set);
     });
-    this.reels.forEach((reel, r) => [1, 2, 3, 0, 4].forEach(row => {
-      const spr = row >= 1 && row <= 3 ? reel.cells[row - 1] : reel.vault[row === 0 ? 0 : 1].content;
+    this.deco.clear();
+    this.reels.forEach((reel, r) => [1, 2, 3, 0, 4].forEach((row, k) => {
+      const spr = this.cellSpr(r, row);
       if (row === 0 || row === 4) { if (!reel.vault[row === 0 ? 0 : 1].open) return; }
-      if (!hit.has(r + ':' + row)) { gsap.to(spr, { alpha: .25, duration: .2 }); return; }
+      if (!hit.has(r + ':' + row)) { gsap.to(spr, { alpha: .28, duration: .25 }); return; }
       if (runAt(r, row)) return;
-      const sx = spr.scale.x, sy = spr.scale.y; const cell = row >= 1 && row <= 3 ? sp.grid[r][row] : null;
-      if (cell && cell.s >= 6 && cell.s <= 9) gsap.to(spr, { rotation: .08, duration: .12, yoyo: true, repeat: 5, ease: 'sine.inOut', delay: .2, onComplete: () => { spr.rotation = 0; } });
-      gsap.timeline().fromTo(spr.scale, { x: sx * 1.25, y: sy * 1.25 }, { x: sx, y: sy, duration: .35, ease: 'back.out(3)' }).to(spr.scale, { x: sx * 1.05, y: sy * 1.05, duration: .55, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-      const p = this.pos(r, row); const sh = new Sprite(this.shine); sh.anchor.set(.5); sh.width = C * .7; sh.height = C * 1.6; sh.rotation = .5; sh.blendMode = 'add'; sh.alpha = .8;
+      const sx = spr.scale.x, sy = spr.scale.y; const cell = row >= 1 && row <= 3 ? sp.grid[r][row] : null; const d = r * .06 + k * .01;
+      if (cell && cell.s >= 6 && cell.s <= 9) gsap.to(spr, { rotation: .06, duration: .14, yoyo: true, repeat: 3, ease: 'sine.inOut', delay: .25 + d, onComplete: () => { spr.rotation = 0; } });
+      gsap.timeline({ delay: d }).fromTo(spr.scale, { x: sx * 1.18, y: sy * 1.18 }, { x: sx, y: sy, duration: .4, ease: 'back.out(3)' }).to(spr.scale, { x: sx * 1.04, y: sy * 1.04, duration: .6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      const p = this.pos(r, row); const sh = new Sprite(this.shine); sh.anchor.set(.5); sh.width = C * .7; sh.height = C * 1.6; sh.rotation = .5; sh.blendMode = 'add'; sh.alpha = .7;
       const mask = new Graphics().roundRect(p.x - C / 2 + 4, p.y - C / 2 + 4, C - 8, C - 8, 10).fill(0xffffff); this.winL.addChild(mask, sh); sh.mask = mask; sh.y = p.y;
-      gsap.fromTo(sh, { x: p.x - C }, { x: p.x + C, duration: .7, delay: .1, repeat: -1, repeatDelay: 1.1, ease: 'power1.inOut' });
-      const fr = new Graphics().roundRect(p.x - C / 2 + 3, p.y - C / 2 + 3, C - 6, C - 6, 12).stroke({ color: 0xf5c542, width: 3 }); this.winL.addChild(fr);
+      gsap.fromTo(sh, { x: p.x - C }, { x: p.x + C, duration: .7, delay: .15 + d, repeat: -1, repeatDelay: 1.4, ease: 'power1.inOut' });
+      const fr = new Graphics().roundRect(p.x - C / 2 + 3, p.y - C / 2 + 3, C - 6, C - 6, 14).stroke({ color: 0xf5c542, width: 4 }).roundRect(p.x - C / 2, p.y - C / 2, C, C, 16).stroke({ color: 0xf5c542, width: 8, alpha: .25 });
+      this.winL.addChild(fr); gsap.from(fr, { alpha: 0, duration: .3, delay: d }); this.deco.set(r + ':' + row, [fr, sh]);
     }));
     this.runners.forEach(R => gsap.fromTo(R.c.scale, { x: 1.15, y: 1.15 }, { x: 1, y: 1, duration: .4, ease: 'back.out(3)' }));
   }
+  private cellSpr(r: number, row: number) { const reel = this.reels[r]; return row >= 1 && row <= 3 ? reel.cells[row - 1] : reel.vault[row === 0 ? 0 : 1].content; }
+  /** Cycle through the paying ways one at a time (only that way lit). Stops on the next spin. */
+  async cycleWays(onWay: (i: number) => void, first = 1400) {
+    const tok = ++this.cyc; if (!this.ways.length) return; onWay(0); if (this.ways.length < 2) return;
+    const all = new Set<string>(); this.ways.forEach(w => w.forEach(k => all.add(k)));
+    await wait(first);
+    for (let i = 0; this.cyc === tok; i = (i + 1) % this.ways.length) {
+      const set = this.ways[i]; onWay(i);
+      all.forEach(k => { const [r, row] = k.split(':').map(Number); const on = set.has(k); const spr = this.cellSpr(r, row);
+        if (!this.runners.some(R => Math.abs(R.c.x - this.pos(r, row).x) < 1 && Math.abs(R.c.y - this.pos(r, row).y) < 1)) gsap.to(spr, { alpha: on ? 1 : .28, duration: .2 });
+        this.deco.get(k)?.forEach(d => gsap.to(d, { alpha: on ? (d instanceof Sprite ? .7 : 1) : 0, duration: .2 })); });
+      await wait(1500);
+    }
+  }
   /** Multiplier slam on a cell: big badge drops from above, glow ring, shake, sound. */
-  async slamMult(r: number, row: number, text: string, color = 0xf5c542) {
-    const p = this.pos(r, row); const b = badge(text, color, 44); b.x = p.x; b.y = p.y; this.fxL.addChild(b);
+  async slamMult(r: number, row: number, text: string, color = 0xf5c542, size = 34) {
+    const p = this.pos(r, row); const b = badge(text, color, size); b.x = p.x; b.y = p.y; this.fxL.addChild(b);
     sfx.multSlam(); gsap.fromTo(b.scale, { x: 3.2, y: 3.2 }, { x: 1, y: 1, duration: .32, ease: 'power4.in' }); gsap.fromTo(b, { alpha: 0 }, { alpha: 1, duration: .15 });
     await wait(this.turbo ? 160 : 320); this.shake(7); this.ring(p.x, p.y, color); this.ring(p.x, p.y, 0xffffff); this.burst(p.x, p.y, 30, color, 1.6);
     await wait(this.turbo ? 200 : 480); return b;
@@ -273,7 +285,7 @@ export class Board {
     this.shake(4); await wait(this.turbo ? 120 : 300);
   }
   clearWins() {
-    for (const ch of [...this.winL.children]) { gsap.killTweensOf(ch); ch.destroy(); }
-    this.reels.forEach(r => { [...r.cells, ...r.vault.map(v => v.content)].forEach(s => { gsap.killTweensOf(s); gsap.killTweensOf(s.scale); s.alpha = 1; s.width = s.height = C; }); });
+    this.cyc++; this.ways = []; this.deco.clear(); for (const ch of [...this.winL.children]) { gsap.killTweensOf(ch); ch.destroy(); }
+    this.reels.forEach(r => { r.cells.forEach(s => { s.rotation = 0; }); [...r.cells, ...r.vault.map(v => v.content)].forEach(s => { gsap.killTweensOf(s); gsap.killTweensOf(s.scale); s.alpha = 1; s.width = s.height = C; }); });
   }
 }

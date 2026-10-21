@@ -51,7 +51,8 @@ export default function App() {
   const [musicOn, setMusic] = useState(true); const [sfxOnS, setSfxS] = useState(true);
   const [pose, setPose] = useState<Pose>('idle');
   const [bubble, setBubble] = useState('');
-  const [msg, setMsg] = useState<{ t: string; k?: string }>({ t: 'PLACE YOUR BET' });
+  const [xtag, setXtag] = useState('');
+  const [msg, setMsg] = useState<{ t: string; k?: string; img?: number; amt?: string }>({ t: 'PLACE YOUR BET' });
   const [ways, setWays] = useState(243);
   const [winC, setWinC] = useState(0);
   const [armed, setArmed] = useState<Tier | null>(null);
@@ -115,7 +116,7 @@ export default function App() {
     if (!busy && !modal && screen === 'game') { if (auto) { setAuto(null); return; } play(); }
   }
   const shown = useRef(0); const winTw = useRef<gsap.core.Tween | null>(null); const msgAmt = useRef<HTMLSpanElement | null>(null);
-  const paint = (c: number) => { shown.current = c; const t = usd(c); if (winRef.current) winRef.current.textContent = t; if (msgAmt.current) msgAmt.current.textContent = t; };
+  const paint = (c: number) => { shown.current = c; const t = usd(c); if (winRef.current) winRef.current.textContent = t; }; void msgAmt; const msgHold = useRef(false);
   /** Single source of truth: integer cents in R.current.winC; every counter paints the same tweened value. */
   function setWin(to: number, dur = .8) { R.current.winC = to; setWinC(to); winTw.current?.kill(); const o = { v: shown.current };
     if (to <= o.v) { paint(to); return; }
@@ -132,7 +133,7 @@ export default function App() {
   const cheer = () => { const el = document.querySelector('.app'); el?.classList.remove('cheer'); void (el as HTMLElement)?.offsetWidth; el?.classList.add('cheer'); sfx.cheer(); };
   async function present(sp: Spin, antic: boolean, firstFree = false) {
     const b = board.current!; const betC = R.current.bet; fx.current?.clear();
-    setMsg({ t: sp.free ? 'FREE SPIN' : 'GOOD LUCK' }); sfx.spinStart(); setWays(243);
+    setMsg({ t: sp.free ? 'FREE SPIN' : 'GOOD LUCK' }); sfx.spinStart(); setWays(243); setXtag(''); msgHold.current = false;
     if (sp.tip.length) { setMsg({ t: "HUBIE'S TIP", k: 'feat' }); say('Here, take a tip.', 'react', 1600); }
     if (sp.lastCall) { setMsg({ t: 'LAST CALL', k: 'feat' }); say('One more round on me.', 'bonus', 1600); await b.banner('LAST CALL', 0xff8a3d, 900); }
     if (sp.hubieRound) { setMsg({ t: "HUBIE'S ROUND", k: 'feat' }); say('This round is on the House.', 'bigwin', 1800); cheer(); await b.banner("HUBIE'S ROUND", 0xf5c542, 900); }
@@ -147,24 +148,24 @@ export default function App() {
     if (sp.runners.length) { await b.moveRunners(sp.runners, firstFree); setBonus(bn => bn && { ...bn, runners: sp.runners.map(x => ({ ...x })) });
       if (sp.runners.some(r => r.doubled)) { setMsg({ t: 'MULTIPLIER DOUBLED', k: 'feat' }); say('Double it!', 'bonus', 1100); cheer(); await T(200); } }
     if (sp.agents) { setMsg({ t: 'DOUBLE AGENT: A ROAMING WILD SPLITS IN TWO', k: 'feat' }); await b.banner('DOUBLE AGENT', 0x02f7fd, 800); }
-    if (sp.free && sp.meterAdd) { setBonus(bn => bn && { ...bn, meter: sp.meter }); setMsg({ t: `HOUSE METER x${sp.meter}`, k: 'feat' }); await b.banner(`METER x${sp.meter}`, 0xf5c542, 700); }
+    if (sp.free && sp.meterAdd) { setBonus(bn => bn && { ...bn, meter: sp.meter }); setMsg({ t: `HOUSE METER x${sp.meter}`, k: 'feat' }); sfx.multSlam(); b.shake(4); await T(700); }
     setWays(sp.ways);
     const c = Math.round(sp.win * betC);
     if (c > 0) {
       const marked = sp.wins.some(w => w.mult > 1);
       const preC = Math.round(sp.pre * betC); const meterOn = sp.free && sp.meter > 1;
-      const labels = sp.wins.map(w => usd(Math.round(w.pay / (meterOn ? sp.meter : 1) * betC)));
-      b.showWins(sp, labels); const big = sp.win >= 5; const dur = sp.win < 1 ? .5 : sp.win < 5 ? .9 : 1.6;
-      if (marked && sp.marked) { const cell = sp.grid.flatMap((col, r) => col.map((x, row) => ({ x, r, row }))).find(q => q.x?.s === sp.marked!.sym && q.row >= 1 && q.row <= 3);
-        if (cell) { const bb = await b.slamMult(cell.r, cell.row, 'x' + sp.marked.mult); bb.destroy(); } }
-      setMsg({ t: 'WIN', k: 'win' }); setWin(R.current.winC + (meterOn ? preC : c), dur);
-      if (meterOn) { await T(dur * 1000); const bb = await b.slamMult(2, 2, 'x' + sp.meter, 0xf5c542); setMsg({ t: `x${sp.meter} HOUSE METER`, k: 'win' }); await b.flyDown(bb); sfx.winTier(1); setWin(R.current.winC - preC + c, 1.2); await T(1300); }
+      const ways = sp.wins.map(w => ({ img: w.sym, t: `${NAMES[w.sym].toUpperCase()} ${w.len} REELS${w.mult > 1 ? ' x' + w.mult : ''}`, amt: usd(Math.round(w.pay / (meterOn ? sp.meter : 1) * betC)) }));
+      b.showWins(sp); const big = sp.win >= 5; const dur = sp.win < 1 ? .5 : sp.win < 5 ? .9 : 1.6;
+      if (marked && sp.marked) { msgHold.current = true; setMsg({ t: `MYSTERY SYMBOL x${sp.marked.mult}`, k: 'feat' }); sfx.multSlam(); await T(650); msgHold.current = false; }
+      setWin(R.current.winC + (meterOn ? preC : c), dur);
+      void b.cycleWays(i => { if (!msgHold.current) setMsg({ ...ways[i], k: 'way' }); }, meterOn ? 2400 : 1400);
+      if (meterOn) { await T(dur * 1000 + 150); msgHold.current = true; setMsg({ t: `HOUSE METER x${sp.meter}`, k: 'feat' }); setXtag('x' + sp.meter); sfx.multSlam(); sfx.winTier(1); setWin(R.current.winC - preC + c, 1.2); await T(1300); msgHold.current = false; }
       if (big) say(sp.win >= 15 ? 'That is House money.' : 'Nice cut.', 'react', 1400);
       if (big) cheer();
       await T(sp.win < 1 ? 700 : sp.win < 5 ? 1100 : 1800); }
     else if (!sp.free && sp.keys < 3) setMsg({ t: sp.keys === 2 ? 'SO CLOSE: ONE KEY SHORT' : 'NO LUCK THIS TIME', k: 'calm' });
-    if (sp.free && sp.addSpins) { setBonus(bn => bn && { ...bn, left: sp.spinsLeft, added: sp.addSpins }); sfx.tierUp(2); cheer(); say('More spins!', 'bigwin', 1400);
-      setMsg({ t: `RETRIGGER +${sp.addSpins} SPINS${sp.addRunner ? ' AND A NEW ROAMING WILD' : ''}`, k: 'feat' }); fx.current?.burst(60, innerWidth / 2, innerHeight * .4, ['spark', 'coin'], 1.3); await b.banner(`+${sp.addSpins} SPINS`, 0x5ff2c0, 1100); }
+    if (sp.free && sp.addSpins) { msgHold.current = true; setBonus(bn => bn && { ...bn, left: sp.spinsLeft, added: sp.addSpins }); sfx.tierUp(2); cheer(); say('More spins!', 'bigwin', 1400);
+      setMsg({ t: `RETRIGGER +${sp.addSpins} SPIN${sp.addSpins > 1 ? 'S' : ''}${sp.addRunner ? ' AND A NEW ROAMING WILD' : ''}`, k: 'feat' }); fx.current?.burst(60, innerWidth / 2, innerHeight * .4, ['spark', 'coin'], 1.3); await b.banner(`+${sp.addSpins} SPIN${sp.addSpins > 1 ? 'S' : ''}`, 0x5ff2c0, 1100); msgHold.current = false; }
     return c;
   }
 
@@ -219,7 +220,6 @@ export default function App() {
       setMsg(total > 0 ? { t: 'TOTAL WIN', k: 'win' } : { t: 'NO LUCK THIS TIME', k: 'calm' });
     } else {
       const x = total / betC; if (x >= TIERS_WIN[0].x) await bigWin(x, total);
-      if (total > 0) setMsg({ t: 'WIN', k: 'win' });
     }
     winTw.current?.kill(); R.current.winC = total; setWinC(total); paint(total);
     const nb = R.current.balance + total; setBalance(nb);
@@ -258,10 +258,6 @@ export default function App() {
   }
 
   const overlayOn = !!(cine || big);
-  const sndBtns = <>
-          <button className={`ic lab ${musicOn ? '' : 'off'}`} title="Music on or off" aria-label="Music" onClick={() => setMusic(m => !m)}><svg viewBox="0 0 24 24"><path d="M9 17V5l11-2v12" stroke="currentColor" strokeWidth="2" fill="none" /><circle cx="6.5" cy="17" r="2.6" fill="currentColor" /><circle cx="17.5" cy="15" r="2.6" fill="currentColor" /></svg><em>MUSIC</em></button>
-          <button className={`ic lab ${sfxOnS ? '' : 'off'}`} title="Sound effects on or off" aria-label="Sound" onClick={() => setSfxS(m => !m)}><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" />{sfxOnS ? <path d="M16 8a5 5 0 0 1 0 8" stroke="currentColor" strokeWidth="2" fill="none" /> : <path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" strokeWidth="2" />}</svg><em>SOUND</em></button>
-  </>;
   return <div className={`app ${SHOWCASE ? 'sc' : ''} ${bonus ? 'bonus' : ''} ${overlayOn ? 'covered' : ''}`}>
     <div className="bg" style={{ ['--bg' as string]: `url(${ART(bonus ? 'bonus_bg' : 'bg')})`, ['--bgt' as string]: `url(${ART(bonus ? 'bonus_bg' : 'bg_tall')})` }} />
     <div className="world"><i className="rain" /><i className="sweep" /><i className="cam c1" /><i className="cam c2" /></div>
@@ -269,40 +265,45 @@ export default function App() {
     <div className="game">
       <aside className="side-l">
         <div className="sign"><small>WIN UP TO</small><b>{MAX_WIN.toLocaleString()}x</b></div>
-        <div className="ways" key={ways}><small>WAYS</small><b>{ways.toLocaleString()}</b></div>
-        {bonus && <div className="runners"><small>ROAMING WILDS</small><div>{(bonus.runners.length ? bonus.runners : Array.from({ length: bonus.tier.runners }, () => ({ m: 1 }))).map((r, i) => <span key={i} className={r.m > 1 ? 'hot' : ''}>x{r.m}</span>)}</div>
-          <small>HOUSE METER</small><div className="meterchip" key={'m' + (bonus.meter ?? 1)}>x{bonus.meter ?? 1}</div>
-          <small>MYSTERY SYMBOL</small><div className="marked"><img src={IMG(bonus.marked.sym)} /><b>x{bonus.marked.mult}</b></div></div>}
         <div className="hubie"><img ref={hubRef} src={hubImg} alt="Hubie" />{bubble && <div className="bubble" key={bubble}>{bubble}</div>}</div>
       </aside>
       <main className="center">
+        <div className="chips">
+          <span className="chip" key={ways}><b>{ways.toLocaleString()}</b>WAYS</span>
+          {bonus && <>
+            <span className="chip wilds">WILDS{(bonus.runners.length ? bonus.runners : Array.from({ length: bonus.tier.runners }, () => ({ m: 1 }))).map((r, i) => <b key={i} className={r.m > 1 ? 'hot' : ''}>x{r.m}</b>)}</span>
+            <span className="chip gold" key={'m' + (bonus.meter ?? 1)}>METER<b>x{bonus.meter ?? 1}</b></span>
+            <span className="chip myst"><img src={IMG(bonus.marked.sym)} alt="" /><b>x{bonus.marked.mult}</b></span></>}
+        </div>
         <div className="board-wrap"><div className="board" ref={boardEl} onClick={() => board.current?.spinning && board.current.quickStop()} /></div>
-        <div className={`msgbar ${msg.k ?? ''}`} key={msg.t + (msg.k ?? '')}>{msg.k === 'win' ? <><span>{msg.t}</span><span className="m-amt" ref={el => { msgAmt.current = el; if (el) el.textContent = usd(shown.current); }} /></> : <span>{msg.t}</span>}</div>
+        <div className={`msgbar ${msg.k ?? ''}`} key={msg.t + (msg.k ?? '')}>{msg.img !== undefined && <img src={IMG(msg.img)} alt="" />}<span>{msg.t}</span>{msg.amt && <em>{msg.amt}</em>}</div>
       </main>
       <aside className="side-r">
         <Logo />
-        {bonus ? <div className="spins-left"><small>SPINS LEFT</small><b key={bonus.left} className={bonus.left ? '' : 'last'}>{bonus.left || 'LAST SPIN'}</b>{!!bonus.added && <i className="added" key={'a' + bonus.left}>+{bonus.added}</i>}<em>{bonus.tier.name}</em></div>
-          : <button className={`buy-btn desk ${armed ? 'armed' : ''}`} title="Buy free spins" disabled={busy} onClick={buyClick}>
-            <img src={IMG(S.KEY)} /><span>{armed ? 'CANCEL BUY' : 'BONUS BUY'}</span><small>{armed ? usd(armed.buy * bet) : `FROM ${usd(TIERS[0].buy * bet)}`}</small></button>}
+        {bonus && <div className={`spins-left ${bonus.left ? '' : 'last'}`}><small>{bonus.left ? 'FREE SPINS' : 'FINAL SPIN'}</small>{!!bonus.left && <b key={bonus.left}>{bonus.left}</b>}{!!bonus.added && <i className="added" key={'a' + bonus.left}>+{bonus.added}</i>}</div>}
       </aside>
-      <footer className="hud">
-        <div className="meter"><label>BALANCE</label><b>{usd(balance)}</b></div>
-        <div className="bet">
-          <button aria-label="Lower bet" disabled={busy || bi <= 0 || !!armed} onClick={() => { sfx.click(); setBet(BETS[bi - 1]); post('bet', { bet: BETS[bi - 1] / 100 }); }}><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="2.6" rx="1.3" fill="currentColor" /></svg></button>
-          <div className="meter c"><label>BET</label><b>{usd(bet)}</b></div>
-          <button aria-label="Raise bet" disabled={busy || bi >= BETS.length - 1 || !!armed} onClick={() => { sfx.click(); setBet(BETS[bi + 1]); post('bet', { bet: BETS[bi + 1] / 100 }); }}><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="2.6" rx="1.3" fill="currentColor" /><rect x="10.7" y="5" width="2.6" height="14" rx="1.3" fill="currentColor" /></svg></button>
+      <footer className="hud2">
+        <div className="strip">
+          <button className="ic sm" title="Game rules and settings" aria-label="Game rules" onClick={() => { sfx.click(); setModal('info'); }}><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" /></svg></button>
+          <div className="cell"><label>BALANCE</label><b>{usd(balance)}</b></div>
+          <div className="cell"><label>BET</label><b>{usd(bet)}</b></div>
+          <div className="cell win"><label>WIN</label><b><span ref={el => { winRef.current = el; if (el && !el.textContent) el.textContent = usd(shown.current); }} />{xtag && <i className="xtag" key={xtag}>{xtag}</i>}</b></div>
+          <button className={`ic sm ${sfxOnS || musicOn ? '' : 'off'}`} title="Sound on or off" aria-label="Sound" onClick={() => { const v = !(musicOn || sfxOnS); setMusic(v); setSfxS(v); }}><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" />{sfxOnS || musicOn ? <path d="M16 8a5 5 0 0 1 0 8" stroke="currentColor" strokeWidth="2" fill="none" /> : <path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" strokeWidth="2" />}</svg></button>
         </div>
-        <div className="ctl">
-          <button className="ic lab" title="Game rules" aria-label="Game rules" onClick={() => { sfx.click(); setModal('info'); }}><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" /></svg><em>RULES</em></button>
-          <button className={`ic lab ${turbo ? 'on' : ''}`} title="Turbo: faster spins" aria-label="Turbo" onClick={() => { sfx.click(); setTurbo(t => !t); }}><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="currentColor" /></svg><em>TURBO</em></button>
-          <button className={`spin ${busy ? 'busy' : ''} ${armed ? 'armed' : ''} ${auto ? 'auto' : ''}`} title="Spin (space)" aria-label="Spin" onClick={spinPress}>
-            {auto ? <b className="auto-n">{auto.left}</b> : <svg viewBox="0 0 48 48" className="coin"><circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="100 26" /><path d="M38 9l3 9-9-1z" fill="currentColor" /><path d="M16 14v20M32 14v20M16 24h16" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" /><path d="M13 13h10l-1-4h-8z" fill="currentColor" /></svg>}
-            {armed && <span className="price">{usd(armed.buy * bet)}</span>}</button>
-          <button className={`ic lab auto ${auto ? 'on' : ''}`} title="Autoplay" aria-label="Autoplay" disabled={!!armed || (busy && !auto)} onClick={() => { sfx.click(); auto ? setAuto(null) : setModal('auto'); }}><svg viewBox="0 0 24 24"><path d="M5 12a7 7 0 0 1 12-5l2-2v6h-6l2-2a4.5 4.5 0 1 0 1 5h2.6A7 7 0 0 1 5 12z" fill="currentColor" /></svg><em>{auto ? 'STOP' : 'AUTO'}</em></button>
-          {!bonus && <button className={`buy-btn mob ${armed ? 'armed' : ''}`} title="Buy free spins" disabled={busy} onClick={buyClick}><img src={IMG(S.KEY)} /><span>{armed ? 'CANCEL' : 'BUY'}<small>BONUS</small></span></button>}
-          {sndBtns}
+        <div className="ctrls">
+          <div className="l">{bonus ? <div className="fs-tag">FREE SPINS</div> : <button className={`buy2 ${armed ? 'armed' : ''}`} title="Buy free spins" disabled={busy} onClick={buyClick}><img src={IMG(S.KEY)} alt="" /><span><b>{armed ? 'CANCEL' : 'BONUS'}</b><small>{armed ? usd(armed.buy * bet) : 'BUY'}</small></span></button>}</div>
+          <div className="c">
+            <button className="pm" aria-label="Lower bet" disabled={busy || bi <= 0 || !!armed} onClick={() => { sfx.click(); setBet(BETS[bi - 1]); post('bet', { bet: BETS[bi - 1] / 100 }); }}><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="2.6" rx="1.3" fill="currentColor" /></svg></button>
+            <button className={`spin ${busy ? 'busy' : ''} ${armed ? 'armed' : ''} ${auto ? 'auto' : ''}`} title="Spin (space)" aria-label="Spin" onClick={spinPress}>
+              {auto ? <b className="auto-n">{auto.left}</b> : <svg viewBox="0 0 48 48" className="coin"><path d="M38 24a14 14 0 1 1-4.1-9.9" fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" /><path d="M36 6v10H26z" fill="currentColor" /></svg>}
+              {armed && <span className="price">{usd(armed.buy * bet)}</span>}</button>
+            <button className="pm" aria-label="Raise bet" disabled={busy || bi >= BETS.length - 1 || !!armed} onClick={() => { sfx.click(); setBet(BETS[bi + 1]); post('bet', { bet: BETS[bi + 1] / 100 }); }}><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="2.6" rx="1.3" fill="currentColor" /><rect x="10.7" y="5" width="2.6" height="14" rx="1.3" fill="currentColor" /></svg></button>
+          </div>
+          <div className="r">
+            <button className={`ic md ${auto ? 'on' : ''}`} title="Autoplay" aria-label="Autoplay" disabled={!!armed || (busy && !auto)} onClick={() => { sfx.click(); auto ? setAuto(null) : setModal('auto'); }}><svg viewBox="0 0 24 24"><path d="M5 12a7 7 0 0 1 12-5l2-2v6h-6l2-2a4.5 4.5 0 1 0 1 5h2.6A7 7 0 0 1 5 12z" fill="currentColor" /></svg><em>{auto ? 'STOP' : 'AUTO'}</em></button>
+            <button className={`ic md ${turbo ? 'on' : ''}`} title="Turbo: faster spins" aria-label="Turbo" onClick={() => { sfx.click(); setTurbo(t => !t); }}><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="currentColor" /></svg><em>TURBO</em></button>
+          </div>
         </div>
-        <div className="meter r"><label>WIN</label><b ref={el => { winRef.current = el; if (el && !el.textContent) el.textContent = usd(shown.current); }} /></div>
       </footer>
     </div>
 
@@ -432,6 +433,7 @@ function Verifier({ prefill }: { prefill?: { seed: string; clientSeed: string; l
 
 function Logo({ big }: { big?: boolean }) {
   return <div className={`logo ${big ? 'big' : ''}`} aria-label="House Rules: Hubie Owns the Night">
-    <div className="lg-main"><span className="lg-h"><svg viewBox="0 0 40 18" className="lg-hat"><rect x="10" y="0" width="20" height="13" rx="2" /><rect x="2" y="12" width="36" height="5" rx="2.5" /><rect x="10" y="9" width="20" height="3" fill="#f5c542" /></svg>H</span>OUSE<b>RULES</b></div>
+    <div className="lg-main"><svg viewBox="0 0 40 26" className="lg-hat" aria-hidden="true"><rect x="9" y="1" width="22" height="18" rx="2.5" /><rect x="9" y="13" width="22" height="3.5" className="band" /><rect x="1" y="18.5" width="38" height="5.5" rx="2.75" /></svg>
+      <span className="lg-a">HOUSE</span><span className="lg-b">RULES</span></div>
     <div className="lg-tag">HUBIE OWNS THE NIGHT</div></div>;
 }
