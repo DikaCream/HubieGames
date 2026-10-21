@@ -148,7 +148,7 @@ export default function App() {
     if (sp.runners.length) { await b.moveRunners(sp.runners, firstFree); setBonus(bn => bn && { ...bn, runners: sp.runners.map(x => ({ ...x })) });
       if (sp.runners.some(r => r.doubled)) { setMsg({ t: 'MULTIPLIER DOUBLED', k: 'feat' }); say('Double it!', 'bonus', 1100); cheer(); await T(200); } }
     if (sp.agents) { setMsg({ t: 'DOUBLE AGENT: A ROAMING WILD SPLITS IN TWO', k: 'feat' }); await b.banner('DOUBLE AGENT', 0x02f7fd, 800); }
-    if (sp.free && sp.meterAdd) { setBonus(bn => bn && { ...bn, meter: sp.meter }); setMsg({ t: `HOUSE METER x${sp.meter}`, k: 'feat' }); sfx.multSlam(); b.shake(4); await T(700); }
+    if (sp.free && sp.meterAdd) { setBonus(bn => bn && { ...bn, meter: sp.meter }); setMsg({ t: `x${sp.meter}`, k: 'mult' }); sfx.multSlam(); b.shake(4); await T(700); }
     setWays(sp.ways);
     const c = Math.round(sp.win * betC);
     if (c > 0) {
@@ -156,16 +156,16 @@ export default function App() {
       const preC = Math.round(sp.pre * betC); const meterOn = sp.free && sp.meter > 1;
       const ways = sp.wins.map(w => ({ img: w.sym, t: `${NAMES[w.sym].toUpperCase()} ${w.len} REELS${w.mult > 1 ? ' x' + w.mult : ''}`, amt: usd(Math.round(w.pay / (meterOn ? sp.meter : 1) * betC)) }));
       b.showWins(sp); const big = sp.win >= 5; const dur = sp.win < 1 ? .5 : sp.win < 5 ? .9 : 1.6;
-      if (marked && sp.marked) { msgHold.current = true; setMsg({ t: `MYSTERY SYMBOL x${sp.marked.mult}`, k: 'feat' }); sfx.multSlam(); await T(650); msgHold.current = false; }
+      if (marked && sp.marked) { msgHold.current = true; setMsg({ t: `x${sp.marked.mult}`, k: 'mult', img: sp.marked.sym }); sfx.multSlam(); await T(650); msgHold.current = false; }
       setWin(R.current.winC + (meterOn ? preC : c), dur);
       void b.cycleWays(i => { if (!msgHold.current) setMsg({ ...ways[i], k: 'way' }); }, meterOn ? 2400 : 1400);
-      if (meterOn) { await T(dur * 1000 + 150); msgHold.current = true; setMsg({ t: `HOUSE METER x${sp.meter}`, k: 'feat' }); setXtag('x' + sp.meter); sfx.multSlam(); sfx.winTier(1); setWin(R.current.winC - preC + c, 1.2); await T(1300); msgHold.current = false; }
+      if (meterOn) { await T(dur * 1000 + 150); msgHold.current = true; setMsg({ t: `x${sp.meter}`, k: 'mult' }); setXtag('x' + sp.meter); sfx.multSlam(); sfx.winTier(1); setWin(R.current.winC - preC + c, 1.2); await T(1300); msgHold.current = false; }
       if (big) say(sp.win >= 15 ? 'That is House money.' : 'Nice cut.', 'react', 1400);
       if (big) cheer();
       await T(sp.win < 1 ? 700 : sp.win < 5 ? 1100 : 1800); }
     else if (!sp.free && sp.keys < 3) setMsg({ t: sp.keys === 2 ? 'SO CLOSE: ONE KEY SHORT' : 'NO LUCK THIS TIME', k: 'calm' });
     if (sp.free && sp.addSpins) { msgHold.current = true; setBonus(bn => bn && { ...bn, left: sp.spinsLeft, added: sp.addSpins }); sfx.tierUp(2); cheer(); say('More spins!', 'bigwin', 1400);
-      setMsg({ t: `RETRIGGER +${sp.addSpins} SPIN${sp.addSpins > 1 ? 'S' : ''}${sp.addRunner ? ' AND A NEW ROAMING WILD' : ''}`, k: 'feat' }); fx.current?.burst(60, innerWidth / 2, innerHeight * .4, ['spark', 'coin'], 1.3); await b.banner(`+${sp.addSpins} SPIN${sp.addSpins > 1 ? 'S' : ''}`, 0x5ff2c0, 1100); msgHold.current = false; }
+      setMsg({ t: `RETRIGGER +${sp.addSpins} SPIN${sp.addSpins > 1 ? 'S' : ''}${sp.addRunner ? ' AND A NEW ROAMING WILD' : ''}`, k: 'feat' }); { const r = document.querySelector('.spins-left')?.getBoundingClientRect(); fx.current?.burst(50, r ? r.x + r.width / 2 : innerWidth / 2, r ? r.y + r.height / 2 : 60, ['spark', 'coin'], 1.1); } sfx.multSlam(); await T(1100); msgHold.current = false; }
     return c;
   }
 
@@ -272,7 +272,7 @@ export default function App() {
           <span className="chip" key={ways}><b>{ways.toLocaleString()}</b>WAYS</span>
           {bonus && <>
             <span className="chip wilds">WILDS{(bonus.runners.length ? bonus.runners : Array.from({ length: bonus.tier.runners }, () => ({ m: 1 }))).map((r, i) => <b key={i} className={r.m > 1 ? 'hot' : ''}>x{r.m}</b>)}</span>
-            <span className="chip gold" key={'m' + (bonus.meter ?? 1)}>METER<b>x{bonus.meter ?? 1}</b></span>
+            <span className="chip gold" key={'m' + (bonus.meter ?? 1)} title="House Meter"><svg viewBox="0 0 40 26" className="chip-hat" aria-hidden="true"><rect x="9" y="1" width="22" height="18" rx="2.5" /><rect x="1" y="18.5" width="38" height="5.5" rx="2.75" /></svg><b>x{bonus.meter ?? 1}</b></span>
             <span className="chip myst"><img src={IMG(bonus.marked.sym)} alt="" /><b>x{bonus.marked.mult}</b></span></>}
         </div>
         <div className="board-wrap"><div className="board" ref={boardEl} onClick={() => board.current?.spinning && board.current.quickStop()} /></div>

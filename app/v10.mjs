@@ -28,7 +28,7 @@ async function settle(opt = {}) {
     const st = await p.evaluate(() => (document.querySelector('.msgbar')?.textContent || '') + '|' + (document.querySelector('.spins-left')?.textContent || '') + '|' + !!document.querySelector('.cine') + !!document.querySelector('.bigwin'));
     if (st !== last) { last = st; lastT = Date.now(); } else if (Date.now() - lastT > 60000) { console.log('STUCK', st); await p.screenshot({ path: '/tmp/stuck.png' }); throw new Error('stuck'); }
     if (opt.win && !shots.has(opt.win) && await p.$('.msgbar.way')) { await W(700); await shot(opt.win); await checkOverlap('win'); }
-    if (opt.mult && await p.$('.msgbar.feat') && (await p.textContent('.msgbar')).includes('HOUSE METER')) { await W(250); await shot(opt.mult); await checkOverlap('mult'); }
+    if (opt.mult && await p.$('.msgbar.mult')) { await W(250); await shot(opt.mult); await checkOverlap('mult'); }
     if (opt.bonus && await p.$('.app.bonus .msgbar.way')) await shot(opt.bonus);
     const cine = await p.$('.cine');
     if (cine) { const out = await p.$('.cine.out'); if (out) { if (!outSeen) { outSeen = Date.now(); } if (Date.now() - outSeen > 3500) { if (opt.end) await shot(opt.end); await cine.click({ force: true }).catch(() => {}); } }
@@ -45,7 +45,7 @@ let wins = 0;
 for (let i = 0; i < N; i++) { await p.click('.spin'); await W(200); await settle({ win: 'win-' + Math.min(wins, 2) }); if (shots.has('win-' + Math.min(wins, 2))) wins++; }
 console.log('normal spins done, win shots', wins);
 for (let k = 0; k < 15; k++) { const d = await p.$('.pm[aria-label="Lower bet"]:not([disabled])'); if (!d) break; await d.click(); await W(60); }
-for (const t of [1, 2, 3]) {
+for (const t of [1, 2, 3].slice(0, +(process.argv[4] || 3))) {
   await p.click('.buy2'); await W(500); if (t === 1) { await shot('buy-menu'); await checkOverlap('buy'); }
   await p.click(`.ticket.t${t}`); await W(300); if (await p.$('.confirm .cta')) await p.click('.confirm .cta'); await W(300);
   await p.click('.spin', { force: true }); await settle({ intro: `bonus${t}-intro`, mult: t === 1 ? 'bonus-mult' : `bonus${t}-mult`, bonus: `bonus${t}-spin`, end: `bonus${t}-end` });
