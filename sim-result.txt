@@ -1,10 +1,11 @@
-BASE GAME (incl. triggered bonuses) {"n":2000000,"rtp":96.77,"bonusShare":36.46,"hitRate":39.07,"maxWinX":50000,"capHits":1,"stdDev":49.3,"ci95":6.83,"bonus1in":[235,5391,400000],"anyBonus1in":225,"dist":{"<5x":1946297,"5 to 20x":43545,"20 to 100x":8817,"100 to 1000x":1276,"1000x+":65}}
-BUY AFTER HOURS @72x: trigger 1 in 239, avg 71.8x, buy RTP 99.75%, max 50000x, cap hits 22/300000, sd 606.7
-BUY MIDNIGHT RUN @350x: trigger 1 in 5575, avg 341.5x, buy RTP 97.57%, max 50000x, cap hits 190/300000, sd 1795.4
-BUY HOUSE TAKEOVER @1680x: trigger 1 in 324986, avg 1585.2x, buy RTP 94.36%, max 50000x, cap hits 1830/300000, sd 5152.1
-Blended RTP estimate 96.96% | bonus EVs 71.8x / 341.5x / 1585.2x | max win cap 50000x
-BASE GAME (incl. triggered bonuses) {"n":2000000,"rtp":96.2,"bonusShare":36.03,"hitRate":39.1,"maxWinX":29223.7,"capHits":0,"stdDev":37.8,"ci95":5.24,"bonus1in":[239,5249,500000],"anyBonus1in":228,"dist":{"<5x":1946609,"5 to 20x":43396,"20 to 100x":8610,"100 to 1000x":1332,"1000x+":53}}
-BUY AFTER HOURS @74x: trigger 1 in 239, avg 71.1x, buy RTP 96.14%, max 50000x, cap hits 16/300000, sd 553.6
-BUY MIDNIGHT RUN @354x: trigger 1 in 5575, avg 347.4x, buy RTP 98.15%, max 50000x, cap hits 217/300000, sd 1856.6
-BUY HOUSE TAKEOVER @1640x: trigger 1 in 324986, avg 1603.5x, buy RTP 97.77%, max 50000x, cap hits 1914/300000, sd 5239.6
-Blended RTP estimate 96.65% | bonus EVs 71.1x / 347.4x / 1603.5x | max win cap 50000x
+BASE GAME (incl. triggered bonuses) {"n":3000000,"rtp":92.16,"bonusShare":32.55,"hitRate":40.06,"maxWinX":50000,"capHits":2,"stdDev":53.8,"ci95":6.09,"bonus1in":[570,16575,1500000],"anyBonus1in":551,"dist":{"<5x":2927201,"5 to 20x":61538,"20 to 100x":9565,"100 to 1000x":1569,"1000x+":127}}
+BUY AFTER HOURS @188x: trigger 1 in 578, avg 173.2x, buy RTP 92.14%, max 50000x, cap hits 46/200000, sd 1180.9
+BUY MIDNIGHT RUN @760x: trigger 1 in 18761, avg 754.1x, buy RTP 99.23%, max 50000x, cap hits 502/200000, sd 3410.1
+BUY HOUSE TAKEOVER @2560x: trigger 1 in 1523562, avg 2503.0x, buy RTP 97.77%, max 50000x, cap hits 2455/200000, sd 7074.7
+Blended RTP estimate 93.78% | bonus EVs 173.2x / 754.1x / 2503.0x | max win cap 50000x
+BASE GAME (incl. triggered bonuses) {"n":3000000,"rtp":92.97,"bonusShare":32.05,"hitRate":40.05,"maxWinX":50000,"capHits":1,"stdDev":46.7,"ci95":5.29,"bonus1in":[580,20000,null],"anyBonus1in":564,"dist":{"<5x":2926505,"5 to 20x":61975,"20 to 100x":9761,"100 to 1000x":1631,"1000x+":128}}
+BUY AFTER HOURS @185x: trigger 1 in 578, avg 180.3x, buy RTP 97.45%, max 50000x, cap hits 101/300000, sd 1274.3
+BUY MIDNIGHT RUN @785x: trigger 1 in 18761, avg 758.8x, buy RTP 96.67%, max 50000x, cap hits 693/300000, sd 3370.1
+BUY HOUSE TAKEOVER @2620x: trigger 1 in 1523562, avg 2508.0x, buy RTP 95.72%, max 50000x, cap hits 3547/300000, sd 7034.7
+Blended RTP estimate 96.34% | bonus EVs 180.3x / 758.8x / 2508.0x | max win cap 50000x
+Final prices after sim8b: 187x / 785x / 2590x (RTP estimates 96.4% / 96.7% / 96.8% from EV 180.3x / 758.8x / 2508.0x)

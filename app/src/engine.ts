@@ -9,7 +9,7 @@ export const PAYING = [6, 7, 8, 9, 10, 11, 12, 13];
 export const PREMIUM = [6, 7, 8, 9];
 const WEIGHTS = [4, 5, 6, 7, 10, 11, 12, 13]; const WSUM = WEIGHTS.reduce((a, b) => a + b, 0);
 /** Total bet = COINS coins; pays are coins per way for 3, 4, 5 reels. */
-export const COINS = 21.5;
+export const COINS = 21.15;
 export const PAYS: Record<number, [number, number, number]> = {
   6: [18, 54, 180], 7: [14, 40, 125], 8: [11, 32, 90], 9: [9, 25, 68], 10: [4, 8, 20], 11: [3, 7, 17], 12: [3, 6, 14], 13: [2, 5, 11],
 };
@@ -21,9 +21,9 @@ export const FEAT = { tipP: 0.022, raidP: 0.02, luckyP: 0.03, agentP: 0.1, meter
 export const BASE: Mode = { keyP: 0.058, dwildP: 0.028, splitP: 0, cellW: [38, 20, 25, 17] };
 export interface Tier { id: 1 | 2 | 3; name: string; spins: number; runners: number; buy: number; mode: Mode }
 export const TIERS: Tier[] = [
-  { id: 1, name: 'AFTER HOURS', spins: 8, runners: 1, buy: 188, mode: { keyP: 0.03, dwildP: 0.025, splitP: 0.039, cellW: [38, 20, 25, 17] } },
-  { id: 2, name: 'MIDNIGHT RUN', spins: 10, runners: 2, buy: 760, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0275, cellW: [38, 20, 25, 17] } },
-  { id: 3, name: 'HOUSE TAKEOVER', spins: 10, runners: 3, buy: 2560, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0325, cellW: [38, 20, 25, 17] } },
+  { id: 1, name: 'AFTER HOURS', spins: 8, runners: 1, buy: 187, mode: { keyP: 0.03, dwildP: 0.025, splitP: 0.039, cellW: [38, 20, 25, 17] } },
+  { id: 2, name: 'MIDNIGHT RUN', spins: 10, runners: 2, buy: 785, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0275, cellW: [38, 20, 25, 17] } },
+  { id: 3, name: 'HOUSE TAKEOVER', spins: 10, runners: 3, buy: 2590, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0325, cellW: [38, 20, 25, 17] } },
 ];
 export interface Cell { s: number; x?: number }
 export interface Reveal { reel: number; row: number; cell: Cell }

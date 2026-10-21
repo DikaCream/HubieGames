@@ -14,7 +14,7 @@ export const MAX_WAYS = 2087008; // reels 1 and 5: 14, reels 2 to 4: 22 (split r
 const usd = (c: number) => '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const TIERS_WIN = [{ x: 15, t: 'NICE TAKE' }, { x: 50, t: 'BIG SCORE' }, { x: 200, t: 'HOUSE MONEY' }, { x: 1000, t: 'OWN THE NIGHT' }];
 const tierOf = (x: number) => { let i = -1; TIERS_WIN.forEach((t, k) => { if (x >= t.x) i = k; }); return i; };
-const RTP = { base: '96.5%', buys: ['96.6%', '96.5%', '96.6%'], maxOdds: 'about 1 in 4,000,000' }; // filled from sim-result.txt
+const RTP = { base: '96.3%', buys: ['96.4%', '96.7%', '96.8%'], maxOdds: 'about 1 in 3,000,000' }; // filled from sim-result.txt
 const TIER_RULES = [
   ['8 free spins', '1 Roaming Wild', 'A Roaming Wild on a split reel doubles its multiplier', '2 or more Keys in one spin add a Roaming Wild'],
   ['10 free spins', '2 Roaming Wilds', 'A Roaming Wild on a split reel doubles its multiplier', '2 or more Keys in one spin add a Roaming Wild'],
@@ -31,8 +31,8 @@ const SLIDES = [
 ];
 const SHOWCASE = typeof location !== 'undefined' && location.search.includes('showcase');
 const demoCache: Record<string, Spin> = {};
-function findSpin(pred: (s: Spin) => boolean) {
-  for (let i = 0; i < 300000; i++) { const r = playRound(() => Array.from({ length: 96 }, Math.random)); if (pred(r.spins[0])) return r.spins[0]; }
+function findSpin(pred: (s: Spin) => boolean, plain = true) {
+  for (let i = 0; i < 300000; i++) { const r = playRound(() => Array.from({ length: 96 }, Math.random)); const x = r.spins[0]; if (pred(x) && (!plain || (!x.tip.length && !x.raid && !x.lucky))) return x; }
   return playRound(() => Array.from({ length: 96 }, Math.random)).spins[0];
 }
 type Pose = 'idle' | 'react' | 'bonus' | 'bigwin';
@@ -245,9 +245,9 @@ export default function App() {
       for (const [k, code] of [['premium', 6], ['bwild', S.WILD], ['split', S.SPLIT], ['expand', S.EXPAND]] as const) if (kind === k) await present(demoCache[k] ??= findSpin(rv(code)), false);
       if (kind.startsWith('intro')) { const t = TIERS[+kind.slice(5)]; setCine({ kind: 'in', tier: t, marked: { sym: 6 + +kind.slice(5), mult: [3, 5, 10][+kind.slice(5)] } }); sfx.bonus(); await wait(80); await tapOrAuto(4000); setCine(null); }
       if (kind.startsWith('end')) { const x = kind === 'end0' ? 0 : 461; const c = x * R.current.bet; setCine({ kind: 'out', tier: TIERS[1], totalC: c, x }); await outroCount(c, R.current.bet); await tapOrAuto(4000); fx.current?.clear(); setCine(null); }
-      if (kind === 'tip') await present(demoCache.tip ??= findSpin(s => s.tip.length >= 2), false);
-      if (kind === 'raid') await present(demoCache.raid ??= findSpin(s => !!s.raid), false);
-      if (kind === 'lucky') await present(demoCache.lucky ??= findSpin(s => s.lucky), false);
+      if (kind === 'tip') await present(demoCache.tip ??= findSpin(s => s.tip.length >= 2, false), false);
+      if (kind === 'raid') await present(demoCache.raid ??= findSpin(s => !!s.raid, false), false);
+      if (kind === 'lucky') await present(demoCache.lucky ??= findSpin(s => s.lucky, false), false);
       if (kind.startsWith('f')) { const pred: Record<string, (s: Spin) => boolean> = { fmeter: s => s.meterAdd > 0 && s.win > 0 && s.meter > 1, fagent: s => s.agents > 0, flast: s => s.lastCall, fround: s => s.hubieRound, fretrig: s => s.addSpins > 0, fmult: s => s.runners.some(r => r.doubled) && s.win > 0 };
         let rd: Round | null = null, idx = 0; for (let i = 0; i < 20000 && !rd; i++) { const r = playRound(() => Array.from({ length: 96 }, Math.random), 1 + (i % 3)); const j = r.spins.findIndex(x => x.free && pred[kind](x)); if (j > 0) { rd = r; idx = j; } }
         if (rd) { const prev = rd.spins[idx - 1]; setBonus({ tier: rd.tier!, left: rd.spins[idx].spinsLeft, marked: rd.marked!, runners: prev.runners, meter: prev.meter || 1 }); setPose('bonus'); board.current.setSkin(true); setMusicMode('bonus');
