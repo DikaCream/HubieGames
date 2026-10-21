@@ -15,15 +15,15 @@ export const PAYS: Record<number, [number, number, number]> = {
 };
 export const MYSTERY_MULTS = [2, 2, 3, 3, 4, 5, 5, 8, 10, 20];
 /** Vault cell reveal weights: premium, Boss Wild, Double Down, Stack Up. */
-export interface Mode { keyP: number; dwildP: number; splitP: number; cellW: [number, number, number, number] }
+export interface Mode { keyP: number; dwildP: number; splitP: number; cellW: [number, number, number, number]; pay?: number }
 /** Base game random features. */
-export const FEAT = { tipP: 0.022, raidP: 0.02, luckyP: 0.03, agentP: 0.1, meterCap: 10, lastCallBelow: 5, hubieRoundAdd: 1 };
-export const BASE: Mode = { keyP: 0.058, dwildP: 0.028, splitP: 0, cellW: [38, 20, 25, 17] };
+export const FEAT = { tipP: 0.022, raidP: 0.02, luckyP: 0.03, agentP: 0.05, meterCap: 5, lastCallBelow: 5, hubieRoundAdd: 1 };
+export const BASE: Mode = { keyP: 0.071, dwildP: 0.028, splitP: 0, cellW: [38, 20, 25, 17], pay: 0.928 };
 export interface Tier { id: 1 | 2 | 3; name: string; spins: number; runners: number; buy: number; mode: Mode }
 export const TIERS: Tier[] = [
-  { id: 1, name: 'AFTER HOURS', spins: 8, runners: 1, buy: 187, mode: { keyP: 0.03, dwildP: 0.025, splitP: 0.039, cellW: [38, 20, 25, 17] } },
-  { id: 2, name: 'MIDNIGHT RUN', spins: 10, runners: 2, buy: 785, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0275, cellW: [38, 20, 25, 17] } },
-  { id: 3, name: 'HOUSE TAKEOVER', spins: 10, runners: 3, buy: 2590, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0325, cellW: [38, 20, 25, 17] } },
+  { id: 1, name: 'AFTER HOURS', spins: 8, runners: 1, buy: 100, mode: { keyP: 0.03, dwildP: 0.025, splitP: 0.039, cellW: [38, 20, 25, 17], pay: 0.602 } },
+  { id: 2, name: 'MIDNIGHT RUN', spins: 10, runners: 2, buy: 400, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0275, cellW: [38, 20, 25, 17], pay: 0.659 } },
+  { id: 3, name: 'HOUSE TAKEOVER', spins: 10, runners: 3, buy: 2000, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0325, cellW: [38, 20, 25, 17], pay: 0.945 } },
 ];
 export interface Cell { s: number; x?: number }
 export interface Reveal { reel: number; row: number; cell: Cell }
@@ -105,7 +105,7 @@ function spinOnce(f: number[], m: Mode, opt: { free: boolean; runners: Runner[];
   for (const s of PAYING) {
     let w = 1, len = 0;
     for (let r = 0; r < REELS; r++) { let v = 0; for (let row = 0; row < ROWS; row++) v += cellW(r, row, s); if (!v) break; w *= v; len++; }
-    if (len >= 3) { const mult = opt.marked && opt.marked.sym === s ? opt.marked.mult : 1; const pay = PAYS[s][len - 3] * w / COINS * mult; wins.push({ sym: s, len, ways: w, pay, mult }); win += pay; }
+    if (len >= 3) { const mult = opt.marked && opt.marked.sym === s ? opt.marked.mult : 1; const pay = PAYS[s][len - 3] * w / COINS * mult * (m.pay ?? 1); wins.push({ sym: s, len, ways: w, pay, mult }); win += pay; }
   }
   const addRunner = opt.free && keys >= 2; const addSpins = opt.free ? keys + (keys >= 2 ? 1 : 0) : 0;
   const pre = win; win *= meter; wins.forEach(w => w.pay *= meter);
