@@ -243,7 +243,7 @@ export default function App() {
       </main>
       <aside className="side-r">
         <Logo />
-        {bonus ? <div className="spins-left"><small>SPINS LEFT</small><b key={bonus.left}>{bonus.left}</b>{!!bonus.added && <i className="added" key={'a' + bonus.left}>+{bonus.added}</i>}<em>{bonus.tier.name}</em></div>
+        {bonus ? <div className="spins-left"><small>SPINS LEFT</small><b key={bonus.left} className={bonus.left ? '' : 'last'}>{bonus.left || 'LAST SPIN'}</b>{!!bonus.added && <i className="added" key={'a' + bonus.left}>+{bonus.added}</i>}<em>{bonus.tier.name}</em></div>
           : <button className={`buy-btn desk ${armed ? 'armed' : ''}`} title="Buy free spins" disabled={busy} onClick={buyClick}>
             <img src={IMG(S.KEY)} /><span>{armed ? 'CANCEL BUY' : 'BONUS BUY'}</span><small>{armed ? usd(armed.buy * bet) : `FROM ${usd(TIERS[0].buy * bet)}`}</small></button>}
       </aside>
@@ -264,7 +264,7 @@ export default function App() {
           {!bonus && <button className={`buy-btn mob ${armed ? 'armed' : ''}`} title="Buy free spins" disabled={busy} onClick={buyClick}><img src={IMG(S.KEY)} /><span>{armed ? 'CANCEL' : 'BUY'}<small>BONUS</small></span></button>}
           {sndBtns}
         </div>
-        <div className="meter r"><label>WIN</label><b ref={winRef}>{usd(winC)}</b></div>
+        <div className="meter r"><label>WIN</label><b ref={el => { winRef.current = el; if (el && !el.textContent) el.textContent = usd(shown.current); }} /></div>
       </footer>
     </div>
 

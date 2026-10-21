@@ -121,7 +121,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:4px;borde
  .game{grid-template-columns:1fr 1fr;grid-template-rows:auto auto 1fr auto;gap:6px;padding:6px 8px 0}
  .side-l{grid-row:1;grid-column:1;flex-direction:row;flex-wrap:wrap;height:auto;justify-content:flex-start;gap:6px}
  .side-r{grid-row:1;grid-column:2;flex-direction:row;height:auto;justify-content:flex-end;gap:8px}
- .center{grid-row:2/4;grid-column:1/-1;align-self:start;--bs:min(calc(100vw - 16px),calc(100dvh - 300px),720px)}
+ .center{grid-row:2/4;grid-column:1/-1;align-self:center;--bs:min(calc(100vw - 16px),calc(100dvh - 300px),720px)}
  .hubie{display:none}.logo{width:min(34vw,150px)}
  .sign{padding:4px 8px}.sign b{font-size:20px}.ways{padding:4px 8px}.ways b{font-size:18px}
  .runners{position:absolute;top:calc(env(safe-area-inset-top) + 104px);left:8px;z-index:3;padding:2px 6px;display:none}
@@ -161,3 +161,4 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:4px;borde
  .stamp{position:static;transform:rotate(-6deg);margin-top:8px;align-self:center}
  .c-file{padding:12px}
 }
+.spins-left b.last{font-size:clamp(22px,4vh,34px)}
