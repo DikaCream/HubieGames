@@ -23,7 +23,10 @@ async function checkOverlap(tag) {
 }
 async function settle(opt = {}) {
   const t0 = Date.now(); let outSeen = 0;
-  while (Date.now() - t0 < 240000) {
+  let last = '', lastT = Date.now();
+  while (Date.now() - t0 < 600000) {
+    const st = await p.evaluate(() => (document.querySelector('.msgbar')?.textContent || '') + '|' + (document.querySelector('.spins-left')?.textContent || '') + '|' + !!document.querySelector('.cine') + !!document.querySelector('.bigwin'));
+    if (st !== last) { last = st; lastT = Date.now(); } else if (Date.now() - lastT > 60000) { console.log('STUCK', st); await p.screenshot({ path: '/tmp/stuck.png' }); throw new Error('stuck'); }
     if (opt.win && !shots.has(opt.win) && await p.$('.msgbar.way')) { await W(700); await shot(opt.win); await checkOverlap('win'); }
     if (opt.mult && await p.$('.msgbar.feat') && (await p.textContent('.msgbar')).includes('HOUSE METER')) { await W(250); await shot(opt.mult); await checkOverlap('mult'); }
     if (opt.bonus && await p.$('.app.bonus .msgbar.way')) await shot(opt.bonus);
