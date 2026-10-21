@@ -1,6 +1,7 @@
 // RTP/volatility simulation. `npx tsx sim.ts [rounds] [hmac]`
 import { createHmac, randomBytes } from 'node:crypto';
 import { BASE, playRound, TIERS, FLOATS_PER_SPIN, BLOCKS_PER_SPIN, MAX_WIN } from './src/engine';
+if (process.env.TK) for (const t of TIERS) { t.mode.splitP *= +process.env.TK; t.mode.dwildP *= +process.env.TK; }
 const N = Number(process.argv[2]||1_000_000), useHmac = process.argv[3]==='hmac';
 let s = (Date.now() ^ 0x9e3779b9)>>>0;
 const fast = ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/2**32; };
