@@ -20,14 +20,27 @@ interface Reel { c: Container; strip: Container; slots: Slot[]; pos: number; spe
 type Particle = { s: Sprite; vx: number; vy: number; life: number; max: number; g: number };
 
 async function loadImg(url: string) { const i = new Image(); i.src = url; await i.decode().catch(() => {}); return i; }
-function tex(img: HTMLImageElement, mode: 'plain' | 'blur' | 'split', pad = 6) {
-  const R = 2, cv = document.createElement('canvas'); cv.width = C * R; cv.height = C * R; const x = cv.getContext('2d')!;
-  const sc = Math.min((C - pad * 2) / img.width, (C - pad * 2) / img.height) * R; const w = img.width * sc, h = img.height * sc;
-  const ox = (cv.width - w) / 2, oy = (cv.height - h) / 2;
-  if (mode === 'plain') x.drawImage(img, ox, oy, w, h);
-  else if (mode === 'blur') { for (let i = 0; i < 14; i++) { x.globalAlpha = .16; x.drawImage(img, ox, oy + (i / 13 - .5) * 100 * R / 2, w, h); } }
-  else { const k = .56; x.drawImage(img, ox * .2, oy * .2, w * k, h * k); x.drawImage(img, cv.width - w * k - ox * .2, cv.height - h * k - oy * .2, w * k, h * k);
-    x.strokeStyle = '#02F7FD'; x.lineWidth = 3 * R; x.beginPath(); x.moveTo(cv.width * .92, cv.height * .08); x.lineTo(cv.width * .08, cv.height * .92); x.globalAlpha = .7; x.stroke(); }
+const FRAME: Record<number, string> = { 0: '#f5c542', 1: '#02F7FD', 2: '#f5c542', 3: '#02F7FD', 4: '#f5c542', 5: '#f5c542', 6: '#e0384e', 7: '#3f86ff', 8: '#1fd08f', 9: '#a865ff', 10: '#5aa7b5', 11: '#5aa7b5', 12: '#5aa7b5', 13: '#5aa7b5' };
+/** One frame system for every symbol: dark rounded card, art inside, coloured rim. Full art cards are cropped to cover; cut out icons sit on a tinted glow. */
+function drawFramed(x: CanvasRenderingContext2D, img: HTMLImageElement, sym: number, card: boolean, X: number, Y: number, W: number) {
+  const col = FRAME[sym] ?? '#5aa7b5', r = W * .14, inset = W * .04;
+  const path = () => { x.beginPath(); x.roundRect(X + inset, Y + inset, W - inset * 2, W - inset * 2, r); };
+  x.save(); path(); x.clip();
+  const g = x.createRadialGradient(X + W / 2, Y + W * .45, W * .05, X + W / 2, Y + W / 2, W * .7); g.addColorStop(0, col + '66'); g.addColorStop(.6, '#0c2229'); g.addColorStop(1, '#050e12');
+  x.fillStyle = g; x.fillRect(X, Y, W, W);
+  if (card) { const c = .07 * img.width; x.drawImage(img, c, c, img.width - 2 * c, img.height - 2 * c, X + inset, Y + inset, W - inset * 2, W - inset * 2); }
+  else { const pad = W * .1, sc = Math.min((W - pad * 2) / img.width, (W - pad * 2) / img.height), w = img.width * sc, h = img.height * sc; x.drawImage(img, X + (W - w) / 2, Y + (W - h) / 2, w, h); }
+  const sh = x.createLinearGradient(0, Y, 0, Y + W); sh.addColorStop(0, '#ffffff22'); sh.addColorStop(.35, '#ffffff00'); x.fillStyle = sh; x.fillRect(X, Y, W, W);
+  x.restore(); path(); x.lineWidth = W * .035; x.strokeStyle = col; x.stroke(); x.lineWidth = W * .012; x.strokeStyle = '#ffffff55'; x.stroke();
+}
+function tex(img: HTMLImageElement, mode: 'plain' | 'blur' | 'split', sym = -1, card = false) {
+  const R = 2, W = C * R, cv = document.createElement('canvas'); cv.width = W; cv.height = W; const x = cv.getContext('2d')!;
+  if (sym < 0) { x.drawImage(img, 0, 0, W, W); return Texture.from(cv); }
+  if (mode === 'plain') drawFramed(x, img, sym, card, 0, 0, W);
+  else if (mode === 'blur') { const t = document.createElement('canvas'); t.width = t.height = W; drawFramed(t.getContext('2d')!, img, sym, card, 0, 0, W);
+    for (let i = 0; i < 12; i++) { x.globalAlpha = .18; x.drawImage(t, 0, (i / 11 - .5) * W * .5); } }
+  else { const h = W * .54; drawFramed(x, img, sym, card, 0, 0, h); drawFramed(x, img, sym, card, W - h, W - h, h);
+    x.strokeStyle = '#02F7FD'; x.lineWidth = 3 * R; x.globalAlpha = .8; x.beginPath(); x.moveTo(W * .92, W * .08); x.lineTo(W * .08, W * .92); x.stroke(); }
   return Texture.from(cv);
 }
 function dotTex() { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d')!; const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -51,9 +64,9 @@ export class Board {
     const cv = this.app.canvas; cv.style.width = '100%'; cv.style.height = '100%'; cv.style.display = 'block'; host.appendChild(cv);
     const imgs = await Promise.all(SYM.map(n => loadImg(ART(n))));
     const cards = new Set([S.WILD, S.DWILD, 6, 7, 8, 9]);
-    this.plain = imgs.map((im, i) => tex(im, 'plain', cards.has(i as 0) ? 4 : 10)); this.blur = imgs.map(im => tex(im, 'blur'));
-    this.splitT = imgs.map((im, i) => tex(im, 'split', cards.has(i as 0) ? 4 : 10));
-    for (const n of ['locked', 'runner']) this.T[n] = tex(await loadImg(ART(n)), 'plain', 2);
+    this.plain = imgs.map((im, i) => tex(im, 'plain', i, cards.has(i as 0))); this.blur = imgs.map((im, i) => tex(im, 'blur', i, cards.has(i as 0)));
+    this.splitT = imgs.map((im, i) => tex(im, 'split', i, cards.has(i as 0)));
+    this.T.locked = tex(await loadImg(ART('locked')), 'plain'); this.T.runner = tex(await loadImg(ART('runner')), 'plain', S.WILD, true);
     this.dot = dotTex(); this.shine = shineTex();
     this.app.stage.addChild(this.root);
     for (let r = 0; r < 5; r++) {
@@ -117,7 +130,7 @@ export class Board {
   private resetVaults() { for (const r of this.reels) for (const v of r.vault) { v.open = false; v.content.visible = false; v.badge?.destroy(); v.badge = null; gsap.killTweensOf(v.lock); v.lock.alpha = 1; v.lock.y = ry(r.vault.indexOf(v) ? 4 : 0); } }
   spin(sp: Spin, opts: { turbo: boolean; antic: boolean }) {
     this.clearWins(); this.clearParticles(); this.resetVaults(); this.turbo = opts.turbo; this.quick = false; this.ctx = sp; this.anticOK = opts.antic; this.keys = 0; this.landed = 0;
-    const now = performance.now(), base = opts.turbo ? 120 : 420, stag = opts.turbo ? 45 : 140;
+    const now = performance.now(), base = opts.turbo ? 90 : 420, stag = opts.turbo ? 0 : 140;
     this.reels.forEach((r, i) => { const col = sp.grid[i]; r.feed = [col[3]!.s, col[2]!.s, col[1]!.s, rndSym()]; r.stopAt = now + base + i * stag; r.antic = false;
       gsap.fromTo(r.strip, { y: 0 }, { y: -12, duration: .07, yoyo: true, repeat: 1 }); setTimeout(() => { r.state = 'spin'; r.speed = 900; }, 60); });
     const t0 = performance.now();
@@ -147,7 +160,7 @@ export class Board {
   async openCells(sp: Spin) {
     for (const rv of sp.reveals) { const r = this.reels[rv.reel]; const v = r.vault[rv.row === 0 ? 0 : 1]; const p = this.pos(rv.reel, rv.row);
       sfx.enhancer(); v.open = true;
-      gsap.to(v.lock, { y: v.lock.y + (rv.row === 0 ? -C * .6 : C * .6), alpha: 0, duration: this.turbo ? .15 : .3, ease: 'power2.in' });
+      sfx.cellOpen(); gsap.to(v.lock, { y: v.lock.y + (rv.row === 0 ? -C * .6 : C * .6), alpha: 0, duration: this.turbo ? .15 : .3, ease: 'power2.in' });
       await wait(this.turbo ? 90 : 200);
       v.content.texture = rv.cell.s === S.EXPAND ? this.plain[S.EXPAND] : this.cellTex(rv.cell); v.content.width = v.content.height = C; v.content.visible = true;
       gsap.fromTo(v.content.scale, { x: v.content.scale.x * 1.5, y: v.content.scale.y * 1.5 }, { x: v.content.scale.x, y: v.content.scale.y, duration: .3, ease: 'back.out(3)' });

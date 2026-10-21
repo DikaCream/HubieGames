@@ -4,7 +4,7 @@
 export const REELS = 5, ROWS = 5, FLOATS_PER_SPIN = 96, BLOCKS_PER_SPIN = 12, MAX_WIN = 50_000, MAX_SPINS = 300, MULT_CAP = 256, MAX_RUNNERS = 5;
 export const S = { WILD: 0, KEY: 1, DWILD: 2, SPLIT: 3, EXPAND: 4, MYST: 5 } as const;
 export const SYM = ['wild', 'key', 'dwild', 'split', 'expand', 'mystery', 'h1', 'h2', 'h3', 'h4', 'l1', 'l2', 'l3', 'l4'] as const;
-export const NAMES = ['Boss Wild', 'House Key', 'Double Wild', 'Double Down', 'Stack Up', 'Sealed Tip', 'The Croupier', 'Big Lou', 'Madame Jade', 'Ratchet', 'Chips', 'Dice', 'Cards', 'Cocktail'];
+export const NAMES = ['Wild', 'Key', 'Double Wild', 'Split', 'Stack', 'Mystery', 'The Croupier', 'Big Lou', 'Madame Jade', 'Ratchet', 'Chips', 'Dice', 'Cards', 'Cocktail'];
 export const PAYING = [6, 7, 8, 9, 10, 11, 12, 13];
 export const PREMIUM = [6, 7, 8, 9];
 const WEIGHTS = [4, 5, 6, 7, 10, 11, 12, 13]; const WSUM = WEIGHTS.reduce((a, b) => a + b, 0);
