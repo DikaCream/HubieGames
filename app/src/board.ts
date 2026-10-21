@@ -194,7 +194,7 @@ export class Board {
   }
   private setBadge(R: { c: Container; b: Container; m: number }, m: number) { if (R.m === m && R.b.parent) return; R.m = m; R.b.destroy(); const b = badge('x' + m, m > 1 ? 0xf5c542 : 0x02f7fd, 24); b.y = C * .36; R.c.addChild(b); R.b = b; gsap.from(b.scale, { x: 1.8, y: 1.8, duration: .3, ease: 'back.out(3)' }); }
   clearRunners() { this.runners.forEach(r => r.c.destroy({ children: true })); this.runners = []; }
-  /** Sealed Tip: key cells turn into envelopes, then reveal the marked symbol and its multiplier. */
+  /** Mystery Symbol: key cells turn into envelopes, then reveal the marked symbol and its multiplier. */
   async mystery(sp: Spin, sym: number, mult: number) {
     const cells: { r: number; row: number; s: Sprite }[] = [];
     sp.grid.forEach((col, r) => col.forEach((c, row) => { if (c && c.s === S.KEY && row >= 1 && row <= 3) cells.push({ r, row, s: this.reels[r].cells[row - 1] }); }));
