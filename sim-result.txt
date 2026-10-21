@@ -1,11 +1,18 @@
-BASE GAME (incl. triggered bonuses) {"n":3000000,"rtp":92.16,"bonusShare":32.55,"hitRate":40.06,"maxWinX":50000,"capHits":2,"stdDev":53.8,"ci95":6.09,"bonus1in":[570,16575,1500000],"anyBonus1in":551,"dist":{"<5x":2927201,"5 to 20x":61538,"20 to 100x":9565,"100 to 1000x":1569,"1000x+":127}}
-BUY AFTER HOURS @188x: trigger 1 in 578, avg 173.2x, buy RTP 92.14%, max 50000x, cap hits 46/200000, sd 1180.9
-BUY MIDNIGHT RUN @760x: trigger 1 in 18761, avg 754.1x, buy RTP 99.23%, max 50000x, cap hits 502/200000, sd 3410.1
-BUY HOUSE TAKEOVER @2560x: trigger 1 in 1523562, avg 2503.0x, buy RTP 97.77%, max 50000x, cap hits 2455/200000, sd 7074.7
-Blended RTP estimate 93.78% | bonus EVs 173.2x / 754.1x / 2503.0x | max win cap 50000x
-BASE GAME (incl. triggered bonuses) {"n":3000000,"rtp":92.97,"bonusShare":32.05,"hitRate":40.05,"maxWinX":50000,"capHits":1,"stdDev":46.7,"ci95":5.29,"bonus1in":[580,20000,null],"anyBonus1in":564,"dist":{"<5x":2926505,"5 to 20x":61975,"20 to 100x":9761,"100 to 1000x":1631,"1000x+":128}}
-BUY AFTER HOURS @185x: trigger 1 in 578, avg 180.3x, buy RTP 97.45%, max 50000x, cap hits 101/300000, sd 1274.3
-BUY MIDNIGHT RUN @785x: trigger 1 in 18761, avg 758.8x, buy RTP 96.67%, max 50000x, cap hits 693/300000, sd 3370.1
-BUY HOUSE TAKEOVER @2620x: trigger 1 in 1523562, avg 2508.0x, buy RTP 95.72%, max 50000x, cap hits 3547/300000, sd 7034.7
-Blended RTP estimate 96.34% | bonus EVs 180.3x / 758.8x / 2508.0x | max win cap 50000x
-Final prices after sim8b: 187x / 785x / 2590x (RTP estimates 96.4% / 96.7% / 96.8% from EV 180.3x / 758.8x / 2508.0x)
+BASE GAME (incl. triggered bonuses) {"n":3000000,"rtp":97.47,"bonusShare":36.21,"hitRate":40.5,"maxWinX":50000,"capHits":2,"stdDev":53.5,"ci95":6.06,"bonus1in":[326,9259,428571],"anyBonus1in":314,"dist":{"<5x":2925074,"5 to 20x":60974,"20 to 100x":11886,"100 to 1000x":1947,"1000x+":119}}
+BUY AFTER HOURS @100x: trigger 1 in 324, avg 8.7x, buy RTP 8.70%, max 8.7x, cap hits 0/1, sd 0
+BUY MIDNIGHT RUN @400x: trigger 1 in 8472, avg 425.7x, buy RTP 106.43%, max 425.7x, cap hits 0/1, sd 0
+BUY HOUSE TAKEOVER @2000x: trigger 1 in 554253, avg 455.3x, buy RTP 22.76%, max 455.3x, cap hits 0/1, sd 0
+Blended RTP estimate 69.06% | bonus EVs 8.7x / 425.7x / 455.3x | max win cap 50000x
+BASE GAME (incl. triggered bonuses) {"n":1000,"rtp":45.22,"bonusShare":0,"hitRate":38.1,"maxWinX":35.7,"capHits":0,"stdDev":1.6,"ci95":9.73,"bonus1in":[null,null,null],"anyBonus1in":1000,"dist":{"<5x":987,"5 to 20x":12,"20 to 100x":1,"100 to 1000x":0,"1000x+":0}}
+BUY AFTER HOURS @100x: trigger 1 in 324, avg 97.2x, buy RTP 97.21%, max 50000x, cap hits 144/2500000, sd 610.9
+Blended RTP estimate 75.25% | bonus EVs 97.2x | max win cap 50000x
+BASE GAME (incl. triggered bonuses) {"n":1000,"rtp":94.77,"bonusShare":29.63,"hitRate":41.7,"maxWinX":146.5,"capHits":0,"stdDev":6.2,"ci95":38.41,"bonus1in":[200,null,null],"anyBonus1in":200,"dist":{"<5x":972,"5 to 20x":20,"20 to 100x":7,"100 to 1000x":1,"1000x+":0}}
+BUY AFTER HOURS @100x: trigger 1 in 324, avg 96.2x, buy RTP 96.17%, max 50000x, cap hits 156/3000000, sd 593.5
+Blended RTP estimate 94.85% | bonus EVs 96.2x | max win cap 50000x
+BASE GAME (incl. triggered bonuses) {"n":1000,"rtp":63.62,"bonusShare":5.06,"hitRate":39.2,"maxWinX":50.6,"capHits":0,"stdDev":2.7,"ci95":16.53,"bonus1in":[1000,null,null],"anyBonus1in":1000,"dist":{"<5x":973,"5 to 20x":22,"20 to 100x":5,"100 to 1000x":0,"1000x+":0}}
+BUY MIDNIGHT RUN @400x: trigger 1 in 8472, avg 387.0x, buy RTP 96.76%, max 50000x, cap hits 1937/3000000, sd 1936.8
+Blended RTP estimate 63.13% | bonus EVs 387.0x | max win cap 50000x
+BASE GAME (incl. triggered bonuses) {"n":1000,"rtp":76.44,"bonusShare":9.52,"hitRate":40.2,"maxWinX":56.9,"capHits":0,"stdDev":3.3,"ci95":20.21,"bonus1in":[200,null,null],"anyBonus1in":200,"dist":{"<5x":967,"5 to 20x":27,"20 to 100x":6,"100 to 1000x":0,"1000x+":0}}
+BUY HOUSE TAKEOVER @2000x: trigger 1 in 554253, avg 1928.7x, buy RTP 96.43%, max 50000x, cap hits 6917/1000000, sd 5657.2
+Blended RTP estimate 67.27% | bonus EVs 1928.7x | max win cap 50000x
+v9 final params. AFTER HOURS pooled at final params: 2.5M runs 97.21% + 3.0M runs 96.17% = 96.64%. MIDNIGHT RUN 3.0M at pay 0.652: 96.76%. HOUSE TAKEOVER 1.0M: 96.43%. Note: the sim9t1 and f1 runs used base pay 0.928 and 0.943 for the trigger spin only, effect under 0.02%.

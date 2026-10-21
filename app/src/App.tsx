@@ -14,7 +14,7 @@ export const MAX_WAYS = 2087008; // reels 1 and 5: 14, reels 2 to 4: 22 (split r
 const usd = (c: number) => '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const TIERS_WIN = [{ x: 15, t: 'NICE TAKE' }, { x: 50, t: 'BIG SCORE' }, { x: 200, t: 'HOUSE MONEY' }, { x: 1000, t: 'OWN THE NIGHT' }];
 const tierOf = (x: number) => { let i = -1; TIERS_WIN.forEach((t, k) => { if (x >= t.x) i = k; }); return i; };
-const RTP = { base: '96.3%', buys: ['96.4%', '96.7%', '96.8%'], maxOdds: 'about 1 in 3,000,000' }; // filled from sim-result.txt
+const RTP = { base: '96.0%', buys: ['96.6%', '96.8%', '96.4%'], maxOdds: 'about 1 in 1,500,000' }; // filled from sim-result.txt
 const TIER_RULES = [
   ['8 free spins', '1 Roaming Wild', 'A Roaming Wild on a split reel doubles its multiplier', '2 or more Keys in one spin add a Roaming Wild'],
   ['10 free spins', '2 Roaming Wilds', 'A Roaming Wild on a split reel doubles its multiplier', '2 or more Keys in one spin add a Roaming Wild'],

@@ -18,11 +18,11 @@ export const MYSTERY_MULTS = [2, 2, 3, 3, 4, 5, 5, 8, 10, 20];
 export interface Mode { keyP: number; dwildP: number; splitP: number; cellW: [number, number, number, number]; pay?: number }
 /** Base game random features. */
 export const FEAT = { tipP: 0.022, raidP: 0.02, luckyP: 0.03, agentP: 0.05, meterCap: 5, lastCallBelow: 5, hubieRoundAdd: 1 };
-export const BASE: Mode = { keyP: 0.071, dwildP: 0.028, splitP: 0, cellW: [38, 20, 25, 17], pay: 0.928 };
+export const BASE: Mode = { keyP: 0.071, dwildP: 0.028, splitP: 0, cellW: [38, 20, 25, 17], pay: 0.943 };
 export interface Tier { id: 1 | 2 | 3; name: string; spins: number; runners: number; buy: number; mode: Mode }
 export const TIERS: Tier[] = [
-  { id: 1, name: 'AFTER HOURS', spins: 8, runners: 1, buy: 100, mode: { keyP: 0.03, dwildP: 0.025, splitP: 0.039, cellW: [38, 20, 25, 17], pay: 0.602 } },
-  { id: 2, name: 'MIDNIGHT RUN', spins: 10, runners: 2, buy: 400, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0275, cellW: [38, 20, 25, 17], pay: 0.659 } },
+  { id: 1, name: 'AFTER HOURS', spins: 8, runners: 1, buy: 100, mode: { keyP: 0.03, dwildP: 0.025, splitP: 0.039, cellW: [38, 20, 25, 17], pay: 0.579 } },
+  { id: 2, name: 'MIDNIGHT RUN', spins: 10, runners: 2, buy: 400, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0275, cellW: [38, 20, 25, 17], pay: 0.652 } },
   { id: 3, name: 'HOUSE TAKEOVER', spins: 10, runners: 3, buy: 2000, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0325, cellW: [38, 20, 25, 17], pay: 0.945 } },
 ];
 export interface Cell { s: number; x?: number }

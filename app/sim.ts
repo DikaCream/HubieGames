@@ -22,7 +22,7 @@ const base = run(N); console.log('BASE GAME (incl. triggered bonuses)', JSON.str
 const nb = Number(process.argv[4]||Math.max(20000, N/10));
 // Low-variance blended estimate: base-spin RTP + sum(trigger prob x bonus EV measured on nb bought bonuses)
 let blended = base.rtp - base.bonusShare; const ev:number[]=[];
-for (const t of TIERS){ const r=run(nb,t.id); ev.push(r.rtp/100);
+for (const t of TIERS){ if (process.env.ONLY && +process.env.ONLY!==t.id) continue; const r=run(nb,t.id); ev.push(r.rtp/100);
   const q=BASE.keyP, k=t.id+2, C=[1,5,10,10,5,1][k]; const p = C*q**k*(1-q)**(5-k); // exact trigger probability
   blended += p*r.rtp;
   console.log(`BUY ${t.name} @${t.buy}x: trigger 1 in ${Math.round(1/p)}, avg ${(r.rtp/100).toFixed(1)}x, buy RTP ${(r.rtp/t.buy).toFixed(2)}%, max ${r.maxWinX}x, cap hits ${r.capHits}/${nb}, sd ${r.stdDev}`); }
