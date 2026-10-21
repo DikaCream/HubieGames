@@ -1,0 +1,5 @@
+BASE GAME (incl. triggered bonuses) {"n":5000000,"rtp":97.03,"bonusShare":32.68,"hitRate":38.72,"maxWinX":10000,"capHits":5,"stdDev":19.8,"ci95":1.74,"bonus1in":[247,5543,384615],"anyBonus1in":237,"dist":{"<5x":4870859,"5 to 20x":99734,"20 to 100x":24590,"100 to 1000x":4651,"1000x+":166}}
+BUY BREAK IN @70x: trigger 1 in 248, avg 67.9x, buy RTP 96.97%, max 10000x, cap hits 90/1000000, sd 218.9
+BUY INSIDE JOB @235x: trigger 1 in 5860, avg 226.4x, buy RTP 96.35%, max 10000x, cap hits 2050/1000000, sd 714.7
+BUY KINGPIN @1020x: trigger 1 in 346359, avg 984.9x, buy RTP 96.56%, max 10000x, cap hits 32643/1000000, sd 2182.4
+Blended RTP estimate 95.88% | bonus EVs 67.9x / 226.4x / 984.9x | max win cap 10000x
