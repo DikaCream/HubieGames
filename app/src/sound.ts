@@ -93,6 +93,9 @@ export const sfx = {
   cellOpen: () => { const t = now(); noise(t, .2, .5, 2500, 2); osc(140, 'square', t, .12, .1, sfxBus, 70); osc(1200, 'triangle', t + .12, .25, .08, sfxBus, 1800); },
   winTier: (i: number) => { const t = now(); const sc = [[0, 4, 7], [0, 4, 7, 11], [0, 4, 7, 11, 14], [0, 4, 7, 11, 14, 19]][Math.max(0, Math.min(3, i))];
     sc.forEach((s, k) => { osc(392 * 2 ** (s / 12), 'triangle', t + k * .09, .5, .09, sfxBus); osc(196 * 2 ** (s / 12), 'square', t + k * .09, .3, .03, sfxBus); }); kick2(t); },
+  multSlam: () => { const t = now(); osc(60, 'sine', t + .3, .5, .7, sfxBus, 30); noise(t + .3, .4, .7, 220, .7, 'lowpass'); osc(500, 'sawtooth', t, .3, .05, sfxBus, 1500); osc(1760, 'triangle', t + .32, .4, .07, sfxBus); },
+  hit: (x: number) => { const t = now(); const n = x >= 5 ? 5 : x >= 1 ? 3 : 2; for (let i = 0; i < n; i++) osc(523 * 2 ** ([0, 4, 7, 12, 16][i] / 12), 'triangle', t + i * .06, .35, .08, sfxBus); osc(1046, 'sine', t + n * .06, .5, .05, sfxBus); },
+  cheer: () => { const t = now(); for (let i = 0; i < 6; i++) noise(t + i * .05, .9, .12, 900 + i * 300, .6, 'bandpass'); },
   whoosh: () => { const t = now(); noise(t, 0.45, 0.35, 900, 0.5, 'bandpass'); },
   coin: () => { const t = now(); osc(2600 + Math.random() * 800, 'triangle', t, 0.08, 0.05, sfxBus); osc(3900, 'sine', t + 0.03, 0.06, 0.03, sfxBus); },
   tierUp: (i: number) => { const t = now(); [0, 4, 7, 12].forEach((s, k) => osc(262 * 2 ** ((s + i * 5) / 12), 'square', t + k * 0.06, 0.3, 0.07, sfxBus)); noise(t, 0.6, 0.3, 3000, 1); },

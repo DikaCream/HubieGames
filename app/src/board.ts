@@ -130,7 +130,10 @@ export class Board {
   private resetVaults() { for (const r of this.reels) for (const v of r.vault) { v.open = false; v.content.visible = false; v.badge?.destroy(); v.badge = null; gsap.killTweensOf(v.lock); v.lock.alpha = 1; v.lock.y = ry(r.vault.indexOf(v) ? 4 : 0); } }
   spin(sp: Spin, opts: { turbo: boolean; antic: boolean }) {
     this.clearWins(); this.clearParticles(); this.resetVaults(); this.turbo = opts.turbo; this.quick = false; this.ctx = sp; this.anticOK = opts.antic; this.keys = 0; this.landed = 0;
-    const now = performance.now(), base = opts.turbo ? 90 : 420, stag = opts.turbo ? 0 : 140;
+    const now = performance.now(), base = opts.turbo ? 90 : 760, stag = opts.turbo ? 0 : 290;
+    // Hard reset of every reel sprite so nothing keeps a stale texture, scale or offset (fixes reel 1 ghost on mobile).
+    this.reels.forEach(r => { r.strip.x = 0; r.c.x = rx(this.reels.indexOf(r)); r.slots.forEach(sl => { gsap.killTweensOf(sl.spr); gsap.killTweensOf(sl.spr.scale); sl.spr.alpha = 1; sl.spr.rotation = 0; sl.spr.x = C / 2; this.setSlot(sl, sl.s, 'plain'); }); });
+    for (const ch of [...this.fxL.children]) { gsap.killTweensOf(ch); ch.destroy(); }
     this.reels.forEach((r, i) => { const col = sp.grid[i]; r.feed = [col[3]!.s, col[2]!.s, col[1]!.s, rndSym()]; r.stopAt = now + base + i * stag; r.antic = false;
       gsap.fromTo(r.strip, { y: 0 }, { y: -12, duration: .07, yoyo: true, repeat: 1 }); setTimeout(() => { r.state = 'spin'; r.speed = 900; }, 60); });
     const t0 = performance.now();
@@ -187,9 +190,12 @@ export class Board {
       const b = badge('x1', 0x02f7fd, 24); b.y = C * .36; c.addChild(b); const p = this.pos(2, 2); c.x = p.x; c.y = p.y; c.scale.set(0); this.runL.addChild(c); this.runners.push({ c, b, m: 1 }); }
     await Promise.all(list.map(async (rn, i) => { const R = this.runners[i]; const p = this.pos(rn.r, rn.row);
       if (first || R.c.scale.x === 0) { R.c.x = p.x; R.c.y = p.y; await gsap.to(R.c.scale, { x: 1, y: 1, duration: .35, ease: 'back.out(2.5)' }); }
-      else { sfx.whoosh(); await gsap.to(R.c, { x: p.x, y: p.y, duration: this.turbo ? .2 : .45, ease: 'power3.inOut' }); }
+      else { sfx.whoosh(); const x0 = R.c.x, y0 = R.c.y, o = { k: 0 }; const h = 60 + Math.hypot(p.x - x0, p.y - y0) * .35;
+        await gsap.to(o, { k: 1, duration: this.turbo ? .25 : .6, ease: 'power1.inOut', onUpdate: () => { R.c.x = x0 + (p.x - x0) * o.k; R.c.y = y0 + (p.y - y0) * o.k - Math.sin(o.k * Math.PI) * h; R.c.rotation = Math.sin(o.k * Math.PI) * .25;
+          if (Math.random() < .7) this.burst(R.c.x, R.c.y, 2, 0x02f7fd, .45); } }); R.c.rotation = 0; sfx.reelStop(2); this.shake(3);
+        gsap.fromTo(R.c.scale, { x: 1.25, y: .8 }, { x: 1, y: 1, duration: .3, ease: 'back.out(3)' }); }
       this.ring(p.x, p.y, 0x02f7fd);
-      if (rn.doubled) { await wait(i * 120); sfx.mult(Math.log2(rn.m)); this.setBadge(R, rn.m); this.burst(p.x, p.y, 24, 0xf5c542, 1.3); gsap.fromTo(R.c.scale, { x: 1.35, y: 1.35 }, { x: 1, y: 1, duration: .4, ease: 'back.out(3)' }); }
+      if (rn.doubled) { await wait(i * 160); const sb = await this.slamMult(rn.r, rn.row, 'x' + rn.m); sb.destroy(); sfx.mult(Math.log2(rn.m)); this.setBadge(R, rn.m); this.burst(p.x, p.y, 24, 0xf5c542, 1.3); gsap.fromTo(R.c.scale, { x: 1.35, y: 1.35 }, { x: 1, y: 1, duration: .4, ease: 'back.out(3)' }); }
       else this.setBadge(R, rn.m); }));
   }
   private setBadge(R: { c: Container; b: Container; m: number }, m: number) { if (R.m === m && R.b.parent) return; R.m = m; R.b.destroy(); const b = badge('x' + m, m > 1 ? 0xf5c542 : 0x02f7fd, 24); b.y = C * .36; R.c.addChild(b); R.b = b; gsap.from(b.scale, { x: 1.8, y: 1.8, duration: .3, ease: 'back.out(3)' }); }
@@ -206,8 +212,8 @@ export class Board {
     sfx.tierUp(1); await wait(this.turbo ? 500 : 1200); bs.forEach(b => b.destroy());
   }
   /** Win presentation: dim others, punch + shine + idle loop on winners, glowing way lines. */
-  showWins(sp: Spin) {
-    if (!sp.wins.length) return;
+  showWins(sp: Spin, labels: string[] = []) {
+    if (!sp.wins.length) return; sfx.hit(sp.win);
     const colors = [0xf5c542, 0x02f7fd, 0xff8a3d, 0x7dffb3]; const hit = new Set<string>();
     const runAt = (r: number, row: number) => sp.runners.some(x => x.r === r && x.row === row);
     sp.wins.forEach((w, wi) => {
@@ -217,14 +223,17 @@ export class Board {
       for (let r = 0; r < w.len; r++) for (const row of rows(r)) hit.add(r + ':' + row);
       for (let r = 0; r < w.len - 1; r++) for (const a of rows(r)) for (const b of rows(r + 1)) { const A = this.pos(r, a), B = this.pos(r + 1, b);
         g.moveTo(A.x, A.y).lineTo(B.x, B.y).stroke({ color: colors[wi % 4], width: 12, alpha: .22 }); g.moveTo(A.x, A.y).lineTo(B.x, B.y).stroke({ color: colors[wi % 4], width: 3.5, alpha: .95 }); }
-      g.alpha = 0; gsap.to(g, { alpha: 1, duration: .25, delay: wi * .1 });
+      g.alpha = 0; gsap.to(g, { alpha: 1, duration: .25, delay: wi * .18 });
+      if (labels[wi]) { const lr = w.len - 1, rr = rows(lr)[0] ?? 2; const P = this.pos(lr, rr); const L = badge(labels[wi], colors[wi % 4], 26); L.x = P.x; L.y = P.y - C * .42; L.alpha = 0; this.winL.addChild(L);
+        gsap.to(L, { alpha: 1, y: L.y - 18, duration: .4, delay: .15 + wi * .18, ease: 'back.out(2)' }); }
     });
     this.reels.forEach((reel, r) => [1, 2, 3, 0, 4].forEach(row => {
       const spr = row >= 1 && row <= 3 ? reel.cells[row - 1] : reel.vault[row === 0 ? 0 : 1].content;
       if (row === 0 || row === 4) { if (!reel.vault[row === 0 ? 0 : 1].open) return; }
-      if (!hit.has(r + ':' + row)) { gsap.to(spr, { alpha: .3, duration: .2 }); return; }
+      if (!hit.has(r + ':' + row)) { gsap.to(spr, { alpha: .25, duration: .2 }); return; }
       if (runAt(r, row)) return;
-      const sx = spr.scale.x, sy = spr.scale.y;
+      const sx = spr.scale.x, sy = spr.scale.y; const cell = row >= 1 && row <= 3 ? sp.grid[r][row] : null;
+      if (cell && cell.s >= 6 && cell.s <= 9) gsap.to(spr, { rotation: .08, duration: .12, yoyo: true, repeat: 5, ease: 'sine.inOut', delay: .2, onComplete: () => { spr.rotation = 0; } });
       gsap.timeline().fromTo(spr.scale, { x: sx * 1.25, y: sy * 1.25 }, { x: sx, y: sy, duration: .35, ease: 'back.out(3)' }).to(spr.scale, { x: sx * 1.05, y: sy * 1.05, duration: .55, yoyo: true, repeat: -1, ease: 'sine.inOut' });
       const p = this.pos(r, row); const sh = new Sprite(this.shine); sh.anchor.set(.5); sh.width = C * .7; sh.height = C * 1.6; sh.rotation = .5; sh.blendMode = 'add'; sh.alpha = .8;
       const mask = new Graphics().roundRect(p.x - C / 2 + 4, p.y - C / 2 + 4, C - 8, C - 8, 10).fill(0xffffff); this.winL.addChild(mask, sh); sh.mask = mask; sh.y = p.y;
@@ -232,6 +241,36 @@ export class Board {
       const fr = new Graphics().roundRect(p.x - C / 2 + 3, p.y - C / 2 + 3, C - 6, C - 6, 12).stroke({ color: 0xf5c542, width: 3 }); this.winL.addChild(fr);
     }));
     this.runners.forEach(R => gsap.fromTo(R.c.scale, { x: 1.15, y: 1.15 }, { x: 1, y: 1, duration: .4, ease: 'back.out(3)' }));
+  }
+  /** Multiplier slam on a cell: big badge drops from above, glow ring, shake, sound. */
+  async slamMult(r: number, row: number, text: string, color = 0xf5c542) {
+    const p = this.pos(r, row); const b = badge(text, color, 44); b.x = p.x; b.y = p.y; this.fxL.addChild(b);
+    sfx.multSlam(); gsap.fromTo(b.scale, { x: 3.2, y: 3.2 }, { x: 1, y: 1, duration: .32, ease: 'power4.in' }); gsap.fromTo(b, { alpha: 0 }, { alpha: 1, duration: .15 });
+    await wait(this.turbo ? 160 : 320); this.shake(7); this.ring(p.x, p.y, color); this.ring(p.x, p.y, 0xffffff); this.burst(p.x, p.y, 30, color, 1.6);
+    await wait(this.turbo ? 200 : 480); return b;
+  }
+  /** Badge flies to the bottom centre of the board (towards the win counter) and pops. */
+  async flyDown(b: Container) { sfx.whoosh(); await gsap.to(b, { x: BW / 2, y: BH - 10, duration: this.turbo ? .25 : .5, ease: 'power2.in' }); this.burst(BW / 2, BH - 20, 26, 0xf5c542, 1.4); b.destroy(); }
+  /** Big centred banner on the board canvas (meter, last call, retrigger). */
+  async banner(text: string, color = 0xf5c542, ms = 900) {
+    const b = badge(text, color, 46); b.x = BW / 2; b.y = BH / 2; this.fxL.addChild(b); sfx.multSlam(); this.shake(6); this.burst(BW / 2, BH / 2, 40, color, 1.8);
+    gsap.fromTo(b.scale, { x: 2.6, y: 2.6 }, { x: 1, y: 1, duration: .35, ease: 'back.out(2)' }); await wait(this.turbo ? ms * .45 : ms);
+    await gsap.to(b, { alpha: 0, duration: .2 }); b.destroy();
+  }
+  /** Hubie's Tip: wilds arc in from the left edge (Hubie's side) and slam onto their cells. */
+  async tipWilds(list: { r: number; row: number }[]) {
+    for (const t of list) { const p = this.pos(t.r, t.row); const w = new Sprite(this.plain[S.WILD]); w.anchor.set(.5); w.width = w.height = C; w.x = -C; w.y = BH * .3; this.fxL.addChild(w);
+      sfx.whoosh(); const o = { k: 0 }; const x0 = w.x, y0 = w.y;
+      await gsap.to(o, { k: 1, duration: this.turbo ? .25 : .5, ease: 'power2.in', onUpdate: () => { w.x = x0 + (p.x - x0) * o.k; w.y = y0 + (p.y - y0) * o.k - Math.sin(o.k * Math.PI) * 160; w.rotation = o.k * 6.28; if (Math.random() < .5) this.burst(w.x, w.y, 2, 0xf5c542, .5); } });
+      w.destroy(); const spr = this.reels[t.r].cells[t.row - 1]; spr.texture = this.plain[S.WILD]; spr.width = spr.height = C; this.shake(5); this.ring(p.x, p.y, 0xf5c542); this.burst(p.x, p.y, 22, 0xf5c542, 1.3); sfx.slam(); }
+    await wait(this.turbo ? 100 : 250);
+  }
+  /** Flip cells to a new symbol (Owl Raid in violet, Last Call wilds in gold). */
+  async flipCells(list: { r: number; row: number }[], sym: number, color: number) {
+    await Promise.all(list.map(async (t, i) => { await wait(i * (this.turbo ? 60 : 140)); const spr = this.reels[t.r].cells[t.row - 1]; const p = this.pos(t.r, t.row); const sx = spr.scale.x;
+      sfx.whoosh(); this.burst(p.x, p.y, 16, color, 1); await gsap.to(spr.scale, { x: 0, duration: .14, ease: 'power2.in' }); spr.texture = this.plain[sym]; spr.width = spr.height = C; const nx = spr.scale.x; spr.scale.x = 0;
+      await gsap.to(spr.scale, { x: nx, duration: .2, ease: 'back.out(3)' }); void sx; this.ring(p.x, p.y, color); }));
+    this.shake(4); await wait(this.turbo ? 120 : 300);
   }
   clearWins() {
     for (const ch of [...this.winL.children]) { gsap.killTweensOf(ch); ch.destroy(); }

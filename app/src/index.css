@@ -139,7 +139,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:4px;borde
 .buy-btn.mob{display:none}
 .ic.lab{width:56px;height:56px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}.ic.lab svg{width:20px;height:20px}.ic.lab em{font-style:normal;font-size:14px;line-height:1;letter-spacing:.04em}
 .ic.off{opacity:.5}.spin .coin{width:46px;height:46px}
-.snd-top{display:none;gap:6px}
+
 .logo{display:flex;flex-direction:column;align-items:center;line-height:1;user-select:none;width:auto}
 .lg-main{display:flex;align-items:flex-end;font-size:clamp(26px,4.4vh,44px);letter-spacing:.02em;color:#e8fbff;text-shadow:0 0 14px rgba(2,247,253,.55),0 3px 0 #04252b}
 .lg-h{position:relative;color:var(--cy)}.lg-hat{position:absolute;left:50%;bottom:88%;width:.95em;transform:translateX(-50%) rotate(-8deg);fill:#0a0f12;stroke:var(--cy);stroke-width:1.2}
@@ -155,10 +155,26 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:4px;borde
  .buy-btn.desk{display:none}.buy-btn.mob{display:flex;flex-direction:row;align-items:center;gap:4px;min-width:72px;height:56px;padding:4px 8px;font-size:18px;border-radius:14px;animation:none}
  .buy-btn.mob img{width:30px;height:30px}.buy-btn.mob span{display:flex;flex-direction:column;line-height:1}.buy-btn.mob small{font-size:14px}
  .ctl>.ic.lab[aria-label=Music],.ctl>.ic.lab[aria-label=Sound]{display:none}
- .snd-top{display:flex}.snd-top .ic.lab{width:48px;height:48px}
  .ctl{gap:6px}.ic.lab{width:52px;height:54px}.spin{width:70px;height:70px}
  .lg-main{font-size:24px}.lg-tag{font-size:14px;letter-spacing:.12em}
  .stamp{position:static;transform:rotate(-6deg);margin-top:8px;align-self:center}
  .c-file{padding:12px}
 }
 .spins-left b.last{font-size:clamp(22px,4vh,34px)}
+
+.meterchip{font-size:26px;color:var(--gold);text-shadow:0 0 12px rgba(245,197,66,.7);animation:pop .4s}
+.app.cheer .bg{animation:cheer .9s ease-out}@keyframes cheer{30%{filter:saturate(1.4) brightness(1.25);transform:scale(1.04) translateY(-6px)}}
+.app.cheer .hubie img{animation:pop .5s}
+.settings{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:8px;border-bottom:1px solid #1d3a42}.settings span{font-family:'Oswald',Impact,sans-serif;color:var(--mut);letter-spacing:.12em;font-size:14px}.pill.on{background:var(--cy);color:#02181c}
+@media (max-aspect-ratio:21/20){
+ .game{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto;gap:4px}
+ .side-r{grid-row:1;grid-column:1;justify-content:center;align-items:center;gap:10px;flex-wrap:nowrap}
+ .side-l{grid-row:2;grid-column:1;justify-content:center;flex-wrap:nowrap;gap:6px;align-items:stretch}
+ .center{grid-row:3;grid-column:1;--bs:min(calc(100vw - 16px),calc(100dvh - 330px),720px)}
+ .hud{grid-row:4}
+ .sign,.ways,.runners{display:flex;flex-direction:column;justify-content:center;padding:3px 8px;position:static}
+ .sign small,.ways small,.runners small{font-size:14px;letter-spacing:.06em}.sign b{font-size:18px}.ways b{font-size:18px}
+ .runners{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:2px 6px;max-width:60vw}.runners div{margin:0}.runners span{min-width:34px;font-size:14px}.meterchip{font-size:18px}.marked img{width:28px;height:28px}.marked b{font-size:16px}
+ .lg-main{font-size:26px}.lg-tag{font-size:14px;letter-spacing:.1em;margin-top:3px}
+ .spins-left{flex-direction:row;padding:2px 10px}.spins-left b{font-size:30px}.spins-left em{display:none}
+}

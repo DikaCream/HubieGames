@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { playRound, PAYS, PAYING, SYM, NAMES, TIERS, S, MAX_WIN, MULT_CAP, COINS, type Spin, type Round, type Tier, type Runner } from './engine';
+import { FEAT, playRound, PAYS, PAYING, SYM, NAMES, TIERS, S, MAX_WIN, MULT_CAP, COINS, type Spin, type Round, type Tier, type Runner } from './engine';
 import { resolveRound, sha256Hex, randomServerSeed, randomClientSeed } from './fair';
 import { sfx, startAmbient, setTension, setMusicOn, setSfxOn, setMusicMode } from './sound';
 import { FX } from './fx';
@@ -25,6 +25,8 @@ const SLIDES = [
   { icons: ['locked', 'key'], t: 'LOCKED CELLS', d: 'Each reel has a locked cell above and below it. 1 or 2 Keys open the locked cells on their reels.' },
   { icons: ['h1', 'wild', 'split', 'expand'], t: 'WHAT IS INSIDE', d: 'An open cell shows a crew symbol, a Wild, a Split (every symbol on that reel counts twice) or a Stack (one symbol that counts as 4).' },
   { icons: ['key', 'runner'], t: 'FREE SPINS', d: `3, 4 or 5 Keys start free spins with 1, 2 or 3 Roaming Wilds. They move every spin and double their multiplier on a split reel, up to x${MULT_CAP}.` },
+  { icons: ['hubie_react', 'wild', 'locked'], t: 'BASE GAME SURPRISES', d: "Any spin can bring Hubie's Tip (Hubie throws 1 to 3 Wilds onto the reels), an Owl Raid (the Night Owls swap one symbol onto reels 1, 2 and 3 for a sure win) or a Lucky Cell (a locked cell opens for free)." },
+  { icons: ['hubie_bonus', 'runner', 'key'], t: 'FREE SPIN EXTRAS', d: `The House Meter multiplies every free spin win and grows by 1 with every Key, up to x${FEAT.meterCap}. Hubie's Round adds 1 more halfway. A doubling Roaming Wild can split in two. If the feature has paid under ${FEAT.lastCallBelow}x by the final spin, Last Call turns reels 2 and 3 Wild.` },
   { art: 'slide_rivals', t: 'MYSTERY SYMBOL', d: 'When free spins start, the Keys flip to reveal one symbol and a multiplier. That symbol pays with the multiplier until the feature ends.' },
 ];
 const SHOWCASE = typeof location !== 'undefined' && location.search.includes('showcase');
@@ -57,7 +59,7 @@ export default function App() {
   const [dontAsk, setDontAsk] = useState(() => localStorage.getItem('hr_noask') === '1');
   const [auto, setAuto] = useState<Auto | null>(null);
   const [autoCfg, setAutoCfg] = useState<Auto>({ left: 25, stopWin: 0, loss: 0, gain: 0, start: 0 });
-  const [bonus, setBonus] = useState<{ tier: Tier; left: number; marked: { sym: number; mult: number }; runners: Runner[]; added?: number } | null>(null);
+  const [bonus, setBonus] = useState<{ tier: Tier; left: number; marked: { sym: number; mult: number }; runners: Runner[]; added?: number; meter?: number } | null>(null);
   const [cine, setCine] = useState<null | { kind: 'in' | 'out'; tier: Tier; marked?: { sym: number; mult: number }; totalC?: number; x?: number }>(null);
   const [big, setBig] = useState<null | { x: number; c: number }>(null);
   const [tab, setTab] = useState(0); const [tip, setTip] = useState<number | null>(null);
@@ -120,21 +122,49 @@ export default function App() {
     winTw.current = gsap.to(o, { v: to, duration: R.current.turbo ? dur * .3 : dur, ease: 'power1.out', onUpdate: () => { paint(Math.max(shown.current, Math.min(to, Math.round(o.v)))); if (Math.random() < .3) sfx.tick(); }, onComplete: () => paint(to) }); }
 
   /** Presents one spin; returns its win in cents. */
+  /** Landing grid: Hubie's Tip, Owl Raid and Last Call cells land as their original symbol first, then change on screen. */
+  function landingSpin(sp: Spin): Spin {
+    const grid = sp.grid.map(c => c.slice());
+    sp.tip.forEach(t => { grid[t.r][t.row] = { s: t.under }; }); sp.raid?.cells.forEach(t => { grid[t.r][t.row] = { s: t.under }; });
+    if (sp.lastCall) for (const r of [1, 2]) for (let row = 1; row <= 3; row++) if (grid[r][row]!.s === S.WILD) grid[r][row] = { s: 10 + (r + row) % 4 };
+    return { ...sp, grid };
+  }
+  const cheer = () => { const el = document.querySelector('.app'); el?.classList.remove('cheer'); void (el as HTMLElement)?.offsetWidth; el?.classList.add('cheer'); sfx.cheer(); };
   async function present(sp: Spin, antic: boolean, firstFree = false) {
     const b = board.current!; const betC = R.current.bet; fx.current?.clear();
     setMsg({ t: sp.free ? 'FREE SPIN' : 'GOOD LUCK' }); sfx.spinStart(); setWays(243);
-    await b.spin(sp, { turbo: R.current.turbo, antic }); setTension(false);
-    if (sp.reveals.length) { setMsg({ t: 'CELLS OPEN', k: 'feat' }); await b.openCells(sp); }
+    if (sp.tip.length) { setMsg({ t: "HUBIE'S TIP", k: 'feat' }); say('Here, take a tip.', 'react', 1600); }
+    if (sp.lastCall) { setMsg({ t: 'LAST CALL', k: 'feat' }); say('One more round on me.', 'bonus', 1600); await b.banner('LAST CALL', 0xff8a3d, 900); }
+    if (sp.hubieRound) { setMsg({ t: "HUBIE'S ROUND", k: 'feat' }); say('This round is on the House.', 'bigwin', 1800); cheer(); await b.banner("HUBIE'S ROUND", 0xf5c542, 900); }
+    await b.spin(landingSpin(sp), { turbo: R.current.turbo, antic }); setTension(false);
+    if (sp.tip.length) await b.tipWilds(sp.tip);
+    if (sp.raid) { setMsg({ t: 'OWL RAID', k: 'feat' }); say('Night Owls! Watch the tables.', 'react', 1600); await b.flipCells(sp.raid.cells, sp.raid.sym, 0xa865ff); }
+    if (sp.lastCall) await b.flipCells([1, 2].flatMap(r => [1, 2, 3].filter(row => sp.grid[r][row]!.s === S.WILD).map(row => ({ r, row }))), S.WILD, 0xf5c542);
+    if (sp.lucky) { setMsg({ t: 'LUCKY CELL', k: 'feat' }); say('Lucky you.', 'react', 1200); await b.banner('LUCKY CELL', 0x02f7fd, 600); }
+    else if (sp.reveals.length) setMsg({ t: 'CELLS OPEN', k: 'feat' });
+    if (sp.reveals.length) await b.openCells(sp);
     if (sp.split.some(Boolean)) { setMsg({ t: 'SPLIT REEL', k: 'feat' }); await b.applySplits(sp); }
     if (sp.runners.length) { await b.moveRunners(sp.runners, firstFree); setBonus(bn => bn && { ...bn, runners: sp.runners.map(x => ({ ...x })) });
-      if (sp.runners.some(r => r.doubled)) { setMsg({ t: 'MULTIPLIER DOUBLED', k: 'feat' }); say('Double it!', 'bonus', 1100); await T(300); } }
+      if (sp.runners.some(r => r.doubled)) { setMsg({ t: 'MULTIPLIER DOUBLED', k: 'feat' }); say('Double it!', 'bonus', 1100); cheer(); await T(200); } }
+    if (sp.agents) { setMsg({ t: 'DOUBLE AGENT: A ROAMING WILD SPLITS IN TWO', k: 'feat' }); await b.banner('DOUBLE AGENT', 0x02f7fd, 800); }
+    if (sp.free && sp.meterAdd) { setBonus(bn => bn && { ...bn, meter: sp.meter }); setMsg({ t: `HOUSE METER x${sp.meter}`, k: 'feat' }); await b.banner(`METER x${sp.meter}`, 0xf5c542, 700); }
     setWays(sp.ways);
     const c = Math.round(sp.win * betC);
-    if (c > 0) { b.showWins(sp); sfx.win(sp.win); setWin(R.current.winC + c);
-      setMsg({ t: 'WIN', k: 'win' }); if (sp.win >= 5) say(sp.win >= 15 ? 'That is House money.' : 'Nice cut.', 'react', 1400);
-      await T(sp.win >= 5 ? 1200 : 800); }
-    else if (!sp.free && sp.keys < 3) setMsg({ t: 'NO LUCK THIS TIME', k: 'calm' });
-    if (sp.free && sp.addSpins) { setBonus(bn => bn && { ...bn, left: sp.spinsLeft, added: sp.addSpins }); sfx.tierUp(0); setMsg({ t: `+${sp.addSpins} SPINS${sp.addRunner ? ' AND A NEW ROAMING WILD' : ''}`, k: 'feat' }); await T(900); }
+    if (c > 0) {
+      const marked = sp.wins.some(w => w.mult > 1);
+      const preC = Math.round(sp.pre * betC); const meterOn = sp.free && sp.meter > 1;
+      const labels = sp.wins.map(w => usd(Math.round(w.pay / (meterOn ? sp.meter : 1) * betC)));
+      b.showWins(sp, labels); const big = sp.win >= 5; const dur = sp.win < 1 ? .5 : sp.win < 5 ? .9 : 1.6;
+      if (marked && sp.marked) { const cell = sp.grid.flatMap((col, r) => col.map((x, row) => ({ x, r, row }))).find(q => q.x?.s === sp.marked!.sym && q.row >= 1 && q.row <= 3);
+        if (cell) { const bb = await b.slamMult(cell.r, cell.row, 'x' + sp.marked.mult); bb.destroy(); } }
+      setMsg({ t: 'WIN', k: 'win' }); setWin(R.current.winC + (meterOn ? preC : c), dur);
+      if (meterOn) { await T(dur * 1000); const bb = await b.slamMult(2, 2, 'x' + sp.meter, 0xf5c542); setMsg({ t: `x${sp.meter} HOUSE METER`, k: 'win' }); await b.flyDown(bb); sfx.winTier(1); setWin(R.current.winC - preC + c, 1.2); await T(1300); }
+      if (big) say(sp.win >= 15 ? 'That is House money.' : 'Nice cut.', 'react', 1400);
+      if (big) cheer();
+      await T(sp.win < 1 ? 700 : sp.win < 5 ? 1100 : 1800); }
+    else if (!sp.free && sp.keys < 3) setMsg({ t: sp.keys === 2 ? 'SO CLOSE: ONE KEY SHORT' : 'NO LUCK THIS TIME', k: 'calm' });
+    if (sp.free && sp.addSpins) { setBonus(bn => bn && { ...bn, left: sp.spinsLeft, added: sp.addSpins }); sfx.tierUp(2); cheer(); say('More spins!', 'bigwin', 1400);
+      setMsg({ t: `RETRIGGER +${sp.addSpins} SPINS${sp.addRunner ? ' AND A NEW ROAMING WILD' : ''}`, k: 'feat' }); fx.current?.burst(60, innerWidth / 2, innerHeight * .4, ['spark', 'coin'], 1.3); await b.banner(`+${sp.addSpins} SPINS`, 0x5ff2c0, 1100); }
     return c;
   }
 
@@ -215,6 +245,14 @@ export default function App() {
       for (const [k, code] of [['premium', 6], ['bwild', S.WILD], ['split', S.SPLIT], ['expand', S.EXPAND]] as const) if (kind === k) await present(demoCache[k] ??= findSpin(rv(code)), false);
       if (kind.startsWith('intro')) { const t = TIERS[+kind.slice(5)]; setCine({ kind: 'in', tier: t, marked: { sym: 6 + +kind.slice(5), mult: [3, 5, 10][+kind.slice(5)] } }); sfx.bonus(); await wait(80); await tapOrAuto(4000); setCine(null); }
       if (kind.startsWith('end')) { const x = kind === 'end0' ? 0 : 461; const c = x * R.current.bet; setCine({ kind: 'out', tier: TIERS[1], totalC: c, x }); await outroCount(c, R.current.bet); await tapOrAuto(4000); fx.current?.clear(); setCine(null); }
+      if (kind === 'tip') await present(demoCache.tip ??= findSpin(s => s.tip.length >= 2), false);
+      if (kind === 'raid') await present(demoCache.raid ??= findSpin(s => !!s.raid), false);
+      if (kind === 'lucky') await present(demoCache.lucky ??= findSpin(s => s.lucky), false);
+      if (kind.startsWith('f')) { const pred: Record<string, (s: Spin) => boolean> = { fmeter: s => s.meterAdd > 0 && s.win > 0 && s.meter > 1, fagent: s => s.agents > 0, flast: s => s.lastCall, fround: s => s.hubieRound, fretrig: s => s.addSpins > 0, fmult: s => s.runners.some(r => r.doubled) && s.win > 0 };
+        let rd: Round | null = null, idx = 0; for (let i = 0; i < 20000 && !rd; i++) { const r = playRound(() => Array.from({ length: 96 }, Math.random), 1 + (i % 3)); const j = r.spins.findIndex(x => x.free && pred[kind](x)); if (j > 0) { rd = r; idx = j; } }
+        if (rd) { const prev = rd.spins[idx - 1]; setBonus({ tier: rd.tier!, left: rd.spins[idx].spinsLeft, marked: rd.marked!, runners: prev.runners, meter: prev.meter || 1 }); setPose('bonus'); board.current.setSkin(true); setMusicMode('bonus');
+          if (prev.runners.length) await board.current.moveRunners(prev.runners, true); await present(rd.spins[idx], false); await T(800);
+          setBonus(null); board.current.clearRunners(); board.current.setSkin(false); setMusicMode('base'); setPose('idle'); } }
       if (kind === 'mystery') { const sp = demoCache.my ??= findSpin(s => s.keys === 3); board.current.show(sp); await board.current.mystery(sp, 7, 5); board.current.show(sp); }
     } finally { setBusy(false); }
   }
@@ -230,10 +268,10 @@ export default function App() {
     <canvas ref={fxRef} className="fx" />
     <div className="game">
       <aside className="side-l">
-        <div className="snd-top">{sndBtns}</div>
         <div className="sign"><small>WIN UP TO</small><b>{MAX_WIN.toLocaleString()}x</b></div>
         <div className="ways" key={ways}><small>WAYS</small><b>{ways.toLocaleString()}</b></div>
         {bonus && <div className="runners"><small>ROAMING WILDS</small><div>{(bonus.runners.length ? bonus.runners : Array.from({ length: bonus.tier.runners }, () => ({ m: 1 }))).map((r, i) => <span key={i} className={r.m > 1 ? 'hot' : ''}>x{r.m}</span>)}</div>
+          <small>HOUSE METER</small><div className="meterchip" key={'m' + (bonus.meter ?? 1)}>x{bonus.meter ?? 1}</div>
           <small>MYSTERY SYMBOL</small><div className="marked"><img src={IMG(bonus.marked.sym)} /><b>x{bonus.marked.mult}</b></div></div>}
         <div className="hubie"><img ref={hubRef} src={hubImg} alt="Hubie" />{bubble && <div className="bubble" key={bubble}>{bubble}</div>}</div>
       </aside>
@@ -270,7 +308,7 @@ export default function App() {
 
     {SHOWCASE && screen === 'game' && <div className="showcase"><b>SHOWCASE</b>
       {['Nice Take', 'Big Score', 'House Money', 'Own the Night'].map((t, i) => <button key={t} onClick={() => demo('big' + i)}>{t}</button>)}
-      {[['antic', 'Anticipation'], ['win', 'Win'], ['dwild', 'Double Wild'], ['premium', 'Cell: Crew'], ['bwild', 'Cell: Wild'], ['split', 'Cell: Split'], ['expand', 'Cell: Stack'], ['mystery', 'Mystery Symbol'], ['intro0', 'Intro 1'], ['intro1', 'Intro 2'], ['intro2', 'Intro 3'], ['end0', 'End: zero'], ['end1', 'End: big']].map(([k, t]) => <button key={k} onClick={() => demo(k)}>{t}</button>)}</div>}
+      {[['antic', 'Anticipation'], ['win', 'Win'], ['dwild', 'Double Wild'], ['premium', 'Cell: Crew'], ['bwild', 'Cell: Wild'], ['split', 'Cell: Split'], ['expand', 'Cell: Stack'], ['mystery', 'Mystery Symbol'], ['tip', "Hubie's Tip"], ['raid', 'Owl Raid'], ['lucky', 'Lucky Cell'], ['fmeter', 'House Meter'], ['fagent', 'Double Agent'], ['flast', 'Last Call'], ['fround', "Hubie's Round"], ['fretrig', 'Retrigger'], ['fmult', 'Roaming x2'], ['intro0', 'Intro 1'], ['intro1', 'Intro 2'], ['intro2', 'Intro 3'], ['end0', 'End: zero'], ['end1', 'End: big']].map(([k, t]) => <button key={k} onClick={() => demo(k)}>{t}</button>)}</div>}
 
     {screen === 'loading' && <div className="ov loading"><Logo big /><div className="load-bar"><i style={{ width: `${loaded * 100}%` }} /></div><small>{Math.round(loaded * 100)}%</small></div>}
 
@@ -300,14 +338,14 @@ export default function App() {
           {cine.marked && <div className="c-mark"><span>MYSTERY SYMBOL</span><img src={IMG(cine.marked.sym)} /><b>x{cine.marked.mult}</b><span>on {NAMES[cine.marked.sym]} wins</span></div>}</div></div>
         <div className="c-tap">{R.current.auto ? 'STARTING' : 'TAP TO START'}</div></div>
         : <div className="c-wrap out"><small className="c-kicker">{cine.tier.name} COMPLETE</small>
-          {cine.totalC ? <><div className="cine-tier">{tierOf(cine.x ?? 0) >= 0 ? TIERS_WIN[tierOf(cine.x ?? 0)].t : 'TOTAL WIN'}</div><div className="cine-total">{usd(0)}</div><div className="c-x">{(cine.x ?? 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}x BET</div></>
+          {cine.totalC ? <><div className="cine-tier">{tierOf(cine.x ?? 0) >= 0 ? TIERS_WIN[tierOf(cine.x ?? 0)].t : 'TOTAL WIN'}</div><div className="cine-total">{usd(0)}</div></>
             : <><div className="cine-tier calm">NO WIN THIS TIME</div><div className="c-calm">THE HOUSE IS ALWAYS OPEN. TRY AGAIN.</div></>}
           <div className="c-tap">TAP TO COLLECT</div></div>}
     </div>}
 
     {big && <div className="bigwin" data-t="0" onClick={() => tapWait.current?.()}>
       <div className="bw-rays" /><img className="bw-hubie" src={ART('hubie_bigwin')} />
-      <div className="bw-text"><div className="bw-title">{TIERS_WIN[0].t}</div><div className="bw-amt">{usd(0)}</div><div className="bw-x">{big.x.toLocaleString('en-US', { maximumFractionDigits: 2 })}x BET</div><div className="bw-hint">TAP TO SKIP</div></div></div>}
+      <div className="bw-text"><div className="bw-title">{TIERS_WIN[0].t}</div><div className="bw-amt">{usd(0)}</div><div className="bw-hint">TAP TO SKIP</div></div></div>}
 
     {modal && <div className="ov modal-wrap" onClick={() => setModal(null)}><div className={`modal ${modal === 'info' || modal === 'fair' ? 'wide' : ''}`} onClick={e => e.stopPropagation()}>
       <div className="m-head"><h2>{{ buy: 'BONUS BUY', confirm: 'CONFIRM BUY', auto: 'AUTOPLAY', info: 'GAME RULES', fair: 'PROVABLY FAIR' }[modal]}</h2>
@@ -326,7 +364,7 @@ export default function App() {
         <label>STOP IF BALANCE RISES BY</label><div className="opts">{[0, 10, 50, 100, 500].map(v => <button key={v} className={autoCfg.gain === v ? 'on' : ''} onClick={() => setAutoCfg(c => ({ ...c, gain: v }))}>{v ? `${v}x · ${usd(v * bet)}` : 'OFF'}</button>)}</div>
         <p className="mut help">Limits count from your balance when autoplay starts ({usd(balance)}). Autoplay keeps going through wins and free spins, collects big wins by itself after a few seconds, and never buys a bonus. Press STOP at any time.</p>
         <button className="cta wide" onClick={() => { sfx.click(); setAuto({ ...autoCfg, start: balance }); setModal(null); }}>START {autoCfg.left} ROUNDS · {usd(autoCfg.left * bet)}</button></div>}
-      {modal === 'info' && <><div className="tabs">{['Features', 'Examples', 'Paytable', 'Rules'].map((t, i) => <button key={t} className={tab === i ? 'on' : ''} onClick={() => setTab(i)}>{t}</button>)}</div>
+      {modal === 'info' && <><div className="settings"><span>SETTINGS</span><button className={`pill ${musicOn ? 'on' : ''}`} onClick={() => setMusic(m => !m)}>MUSIC {musicOn ? 'ON' : 'OFF'}</button><button className={`pill ${sfxOnS ? 'on' : ''}`} onClick={() => setSfxS(m => !m)}>SOUND {sfxOnS ? 'ON' : 'OFF'}</button></div><div className="tabs">{['Features', 'Examples', 'Paytable', 'Rules'].map((t, i) => <button key={t} className={tab === i ? 'on' : ''} onClick={() => setTab(i)}>{t}</button>)}</div>
         {tab === 0 && <div className="blocks">
           {[['locked', 'Locked Cells', 'Each reel has a locked cell above and below it. 1 or 2 Keys open the cells on their reels. 3 or more Keys start free spins instead.'],
             ['h1', 'Crew Symbol', 'An open cell can show a crew symbol. It adds one more symbol to that reel.'],
@@ -336,6 +374,12 @@ export default function App() {
             ['dwild', 'Double Wild', 'Can land on reels 2, 3 and 4 in any game. It counts as 2 Wilds and turns its reel into a split reel.'],
             ['runner', 'Roaming Wild', `Free spins only. Moves to a new spot every spin. On a split reel its multiplier doubles, up to x${MULT_CAP}, and it keeps that multiplier.`],
             ['mystery', 'Mystery Symbol', 'When free spins start, the Keys flip to show one symbol and a multiplier. Wins with that symbol get the multiplier for the whole feature.'],
+            ['hubie_react', "Hubie's Tip", 'Base game. Before the win check Hubie can throw 1 to 3 Wilds onto the reels.'],
+            ['h4', 'Owl Raid', 'Base game. The Night Owls swap one symbol onto reels 1, 2 and 3, so the spin always wins.'],
+            ['locked', 'Lucky Cell', 'Base game. With no Key on screen, one locked cell can open for free.'],
+            ['hubie_bonus', 'House Meter', `Free spins. Starts at x1 and multiplies every win. Each Key adds 1, Hubie's Round adds 1 halfway through. Up to x${FEAT.meterCap}, kept until the feature ends.`],
+            ['runner', 'Double Agent', 'Free spins. A Roaming Wild that doubles its multiplier can split in two; the new one starts at x1.'],
+            ['wild', 'Last Call', `Free spins. If the feature has paid less than ${FEAT.lastCallBelow}x your bet before the final spin, reels 2 and 3 turn fully Wild on that spin.`],
             ['key', 'Free Spins', '3, 4 or 5 Keys start AFTER HOURS, MIDNIGHT RUN or HOUSE TAKEOVER. During free spins each Key adds 1 spin; 2 or more Keys in one spin also add a Roaming Wild and 1 more spin.'],
           ].map(([i, t, d]) => <div className="blk" key={t}><img src={ART(i)} /><div><b>{t}</b><span>{d}</span></div></div>)}</div>}
         {tab === 1 && <div className="ex"><Example win /><Example /></div>}
