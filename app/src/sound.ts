@@ -26,13 +26,13 @@ function osc(freq: number, type: OscillatorType, t0: number, dur: number, vol: n
   const c = ac(), o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t0);
   if (glide) o.frequency.exponentialRampToValueAtTime(glide, t0 + dur);
   g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + att); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  o.connect(g).connect(dest); o.start(t0); o.stop(t0 + dur + 0.05);
+  o.connect(g).connect(dest); o.onended = () => { o.disconnect(); g.disconnect(); }; o.start(t0); o.stop(t0 + dur + 0.05);
 }
 function noise(t0: number, dur: number, vol: number, freq: number, q = 1, type: BiquadFilterType = 'bandpass', dest?: AudioNode) {
   const c = ac(), s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
   s.buffer = noiseBuf(); s.loop = true; f.type = type; f.frequency.value = freq; f.Q.value = q;
   g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  s.connect(f).connect(g).connect(dest ?? sfxBus); s.start(t0, Math.random()); s.stop(t0 + dur + 0.05);
+  s.connect(f).connect(g).connect(dest ?? sfxBus); s.onended = () => { s.disconnect(); f.disconnect(); g.disconnect(); }; s.start(t0, Math.random()); s.stop(t0 + dur + 0.05);
 }
 const N = (m: number) => 440 * 2 ** ((m - 69) / 12);
 
@@ -136,6 +136,9 @@ export const stopMusic = () => clearInterval(timer);
 const now = () => ac().currentTime;
 const kick2 = (t: number) => osc(90, 'sine', t, .3, .4, sfxBus, 40);
 const arp = (root: number, iv: number[], gap: number, d: number, v: number, type: OscillatorType = 'triangle', t = now()) => iv.forEach((s, i) => osc(N(root + s), type, t + i * gap, d, v, sfxBus));
+/** Rate limit for sounds fired from per frame callbacks (each call creates WebAudio nodes). */
+const lastAt: Record<string, number> = {};
+function gate(k: string, ms: number) { const t = performance.now(); if (t - (lastAt[k] ?? 0) < ms) return false; lastAt[k] = t; return true; }
 export const sfx = {
   click: () => osc(900, 'square', now(), 0.04, 0.05, sfxBus),
   spinStart: () => { const t = now(); noise(t, 0.35, 0.22, 800, 0.7, 'lowpass'); osc(120, 'sawtooth', t, 0.3, 0.1, sfxBus, 60); },
@@ -149,7 +152,7 @@ export const sfx = {
   safe: () => { const t = now(); for (let i = 0; i < 4; i++) osc(2200, 'square', t + i * 0.06, 0.02, 0.05, sfxBus); noise(t + 0.3, 0.4, 0.6, 180, 1, 'lowpass'); osc(90, 'sine', t + 0.3, 0.4, 0.4, sfxBus, 45); },
   enhancer: () => { const t = now(); osc(700, 'triangle', t, 0.3, 0.1, sfxBus, 1400); noise(t, 0.2, 0.2, 4000, 3); },
   win: (x: number) => arp(x > 5 ? 64 : 60, [0, 3, 7, 10], .07, .25, .06, 'square'),
-  tick: () => osc(1400 + Math.random() * 300, 'square', now(), 0.02, 0.022, sfxBus),
+  tick: () => { if (!gate('tick', 70)) return; osc(1400 + Math.random() * 300, 'square', now(), 0.02, 0.022, sfxBus); },
   bigWin: () => { const t = now(); noise(t, 1.2, 0.5, 120, 0.7, 'lowpass'); osc(55, 'sine', t, 1.2, 0.6, sfxBus, 30); arp(57, [0, 5, 7, 12, 15, 19, 24], .11, .5, .05, 'sawtooth', t + .2); },
   bonus: () => { const t = now(); noise(t, 1.5, 0.6, 90, 0.5, 'lowpass'); arp(45, [0, 3, 7, 12, 15], .18, .9, .08, 'sawtooth', t); osc(41, 'sine', t, 2, 0.5, sfxBus); },
   slam: () => { const t = now(); noise(t, 0.5, 0.9, 140, 0.6, 'lowpass'); osc(48, 'sine', t, 0.6, 0.8, sfxBus, 28); osc(2400, 'triangle', t, 0.25, 0.06, sfxBus, 1200); },
@@ -165,7 +168,7 @@ export const sfx = {
   retrigger: () => { const t = now(); arp(60, [0, 4, 7, 12, 16, 19, 24], .07, .5, .07, 'square', t); osc(N(96), 'sine', t + .5, 1.2, .07, sfxBus); osc(N(103), 'sine', t + .62, 1, .04, sfxBus); noise(t, 1, .25, 7000, .8, 'highpass'); kick2(t); },
   cheer: () => { const t = now(); for (let i = 0; i < 6; i++) noise(t + i * .05, .9, .1, 900 + i * 300, .6, 'bandpass'); },
   whoosh: () => { const t = now(); noise(t, 0.45, 0.32, 900, 0.5, 'bandpass'); },
-  coin: () => { const t = now(); osc(2600 + Math.random() * 800, 'triangle', t, 0.08, 0.045, sfxBus); osc(3900, 'sine', t + 0.03, 0.06, 0.025, sfxBus); },
+  coin: () => { if (!gate('coin', 90)) return; const t = now(); osc(2600 + Math.random() * 800, 'triangle', t, 0.08, 0.045, sfxBus); osc(3900, 'sine', t + 0.03, 0.06, 0.025, sfxBus); },
   tierUp: (i: number) => arp(60 + i * 5, [0, 4, 7, 12], .06, .3, .07, 'square'),
   heat: () => { const t = now(); noise(t, 0.7, 0.4, 600, 0.4, 'lowpass'); osc(110, 'sawtooth', t, 0.5, 0.08, sfxBus, 330); },
   firework: () => { const t = now(); osc(400, 'sine', t, .5, .05, sfxBus, 1800); noise(t + .5, .7, .45, 2500, .4, 'lowpass'); noise(t + .5, 1.1, .1, 7000, 1, 'highpass'); },

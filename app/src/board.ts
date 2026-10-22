@@ -43,6 +43,8 @@ function tex(img: HTMLImageElement, mode: 'plain' | 'blur' | 'split', sym = -1, 
     x.strokeStyle = '#02F7FD'; x.lineWidth = 1.5 * R; x.globalAlpha = .35; x.beginPath(); x.moveTo(W * .92, W * .08); x.lineTo(W * .08, W * .92); x.stroke(); }
   return Texture.from(cv);
 }
+const MOBILE = typeof innerWidth !== 'undefined' && Math.min(innerWidth, innerHeight) < 600; const PART_CAP = MOBILE ? 160 : 320;
+function killDeep(o: Container) { gsap.killTweensOf(o); gsap.killTweensOf(o.scale); o.children.forEach(c => killDeep(c as Container)); }
 function dotTex() { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d')!; const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
   g.addColorStop(0, '#fff'); g.addColorStop(.4, '#ffffff88'); g.addColorStop(1, '#fff0'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return Texture.from(c); }
 function shineTex() { const c = document.createElement('canvas'); c.width = 128; c.height = 8; const x = c.getContext('2d')!; const g = x.createLinearGradient(0, 0, 128, 0);
@@ -60,7 +62,7 @@ export class Board {
   private spinTok = 0; private t = 0; private landResolve: (() => void) | null = null; private landed = 0; private ctx: Spin | null = null; private anticOK = false; private keys = 0;
 
   async init(host: HTMLElement) {
-    await this.app.init({ width: BW, height: BH, backgroundAlpha: 0, antialias: true, resolution: Math.min(devicePixelRatio || 1, 2), autoDensity: true, preference: 'webgl' });
+    await this.app.init({ width: BW, height: BH, backgroundAlpha: 0, antialias: (devicePixelRatio || 1) < 2, resolution: Math.min(devicePixelRatio || 1, 2), autoDensity: true, preference: 'webgl' });
     const cv = this.app.canvas; cv.style.width = '100%'; cv.style.height = '100%'; cv.style.display = 'block'; host.appendChild(cv);
     const imgs = await Promise.all(SYM.map(n => loadImg(ART(n))));
     const cards = new Set([S.WILD, S.DWILD, 6, 7, 8, 9, 10, 11, 12, 13]);
@@ -105,7 +107,7 @@ export class Board {
       if (done) this.land(r); else this.layout(r);
     }
     for (let i = this.parts.length - 1; i >= 0; i--) { const p = this.parts[i]; p.life += dt; p.vy += p.g * dt / 16; p.s.x += p.vx * dt / 16; p.s.y += p.vy * dt / 16; p.s.alpha = Math.max(0, 1 - p.life / p.max);
-      if (p.life >= p.max) { p.s.destroy(); this.parts.splice(i, 1); } }
+      if (p.life >= p.max) { this.recycle(p.s); this.parts.splice(i, 1); } }
     for (const r of this.reels) if (r.antic) r.glow.alpha = .65 + Math.sin(this.t / 90) * .35;
   }
   private land(r: Reel) {
@@ -133,7 +135,7 @@ export class Board {
     const now = performance.now(), base = opts.turbo ? 90 : 520, stag = opts.turbo ? 0 : 220;
     // Hard reset of every reel sprite so nothing keeps a stale texture, scale or offset (fixes reel 1 ghost on mobile).
     this.reels.forEach(r => { r.strip.x = 0; r.c.x = rx(this.reels.indexOf(r)); r.slots.forEach(sl => { gsap.killTweensOf(sl.spr); gsap.killTweensOf(sl.spr.scale); sl.spr.alpha = 1; sl.spr.rotation = 0; sl.spr.x = C / 2; this.setSlot(sl, sl.s, 'plain'); }); });
-    for (const ch of [...this.fxL.children]) { gsap.killTweensOf(ch); ch.destroy(); }
+    this.clearParticles(); for (const ch of [...this.fxL.children]) { gsap.killTweensOf(ch); ch.destroy(); }
     this.reels.forEach((r, i) => { const col = sp.grid[i]; r.feed = [col[3]!.s, col[2]!.s, col[1]!.s, rndSym()]; r.stopAt = now + base + i * stag; r.antic = false;
       gsap.fromTo(r.strip, { y: 0 }, { y: -12, duration: .07, yoyo: true, repeat: 1 }); setTimeout(() => { r.state = 'spin'; r.speed = 900; }, 60); });
     const t0 = performance.now(); const tok = ++this.spinTok;
@@ -153,10 +155,13 @@ export class Board {
   shake(a: number) { gsap.killTweensOf(this.root, 'x,y'); const tl = gsap.timeline(); for (let k = 0; k < 4; k++) tl.to(this.root, { x: (Math.random() - .5) * a * 2 * (1 - k / 4), y: (Math.random() - .5) * a * 2 * (1 - k / 4), duration: .03 }); tl.to(this.root, { x: 0, y: 0, duration: .04 }); }
   pos(r: number, row: number) { return { x: rx(r) + C / 2, y: ry(row) + C / 2 }; }
   burst(x: number, y: number, n: number, color: number, power = 1, g = .12) {
-    for (let i = 0; i < n; i++) { const s = new Sprite(this.dot); s.anchor.set(.5); s.tint = color; s.blendMode = 'add'; s.width = s.height = 6 + Math.random() * 14; s.x = x; s.y = y; this.fxL.addChild(s);
+    n = Math.min(MOBILE ? Math.ceil(n * .6) : n, Math.max(0, PART_CAP - this.parts.length));
+    for (let i = 0; i < n; i++) { const s = this.pool.pop() ?? new Sprite(this.dot); s.anchor.set(.5); s.tint = color; s.blendMode = 'add'; s.alpha = 1; s.visible = true; s.width = s.height = 6 + Math.random() * 14; s.x = x; s.y = y; this.fxL.addChild(s);
       const a = Math.random() * Math.PI * 2, v = (2 + Math.random() * 6) * power; this.parts.push({ s, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, life: 0, max: 400 + Math.random() * 400, g }); }
   }
-  clearParticles() { this.parts.forEach(p => p.s.destroy()); this.parts = []; }
+  clearParticles() { this.parts.forEach(p => this.recycle(p.s)); this.parts = []; }
+  private pool: Sprite[] = [];
+  private recycle(s: Sprite) { if (s.destroyed) return; s.removeFromParent(); if (this.pool.length < PART_CAP) this.pool.push(s); else s.destroy(); }
   private ring(x: number, y: number, color: number) { const ring = new Sprite(this.dot); ring.anchor.set(.5); ring.tint = color; ring.blendMode = 'add'; ring.x = x; ring.y = y; ring.width = ring.height = C; this.fxL.addChild(ring);
     gsap.to(ring, { width: C * 2.6, height: C * 2.6, alpha: 0, duration: .6, ease: 'power2.out', onComplete: () => { ring.destroy(); } }); }
   private slam(r: number, row: number, color: number, k = 1) {
@@ -204,8 +209,8 @@ export class Board {
       if (rn.doubled) { await wait(i * 160); sfx.multSlam(); this.shake(5); this.ring(p.x, p.y, 0xf5c542); this.ring(p.x, p.y, 0xffffff); await wait(this.turbo ? 200 : 450); sfx.mult(Math.log2(rn.m)); this.setBadge(R, rn.m); this.burst(p.x, p.y, 24, 0xf5c542, 1.3); gsap.fromTo(R.c.scale, { x: 1.35, y: 1.35 }, { x: 1, y: 1, duration: .4, ease: 'back.out(3)' }); }
       else this.setBadge(R, rn.m); }));
   }
-  private setBadge(R: { c: Container; b: Container; m: number }, m: number) { if (R.m === m && R.b.parent) return; R.m = m; R.b.destroy(); const b = new Container(); if (m > 1) { const g = new Graphics().roundRect(-C * .49, -C * .49, C * .98, C * .98, 16).stroke({ color: 0xf5c542, width: 5 }); b.addChild(g); gsap.to(g, { alpha: .45, duration: .6, yoyo: true, repeat: -1 }); } R.c.addChild(b); R.b = b; }
-  clearRunners() { this.runners.forEach(r => r.c.destroy({ children: true })); this.runners = []; }
+  private setBadge(R: { c: Container; b: Container; m: number }, m: number) { if (R.m === m && R.b.parent) return; R.m = m; killDeep(R.b); R.b.destroy(); const b = new Container(); if (m > 1) { const g = new Graphics().roundRect(-C * .49, -C * .49, C * .98, C * .98, 16).stroke({ color: 0xf5c542, width: 5 }); b.addChild(g); gsap.to(g, { alpha: .45, duration: .6, yoyo: true, repeat: -1 }); } R.c.addChild(b); R.b = b; }
+  clearRunners() { this.runners.forEach(r => { killDeep(r.c); r.c.destroy({ children: true }); }); this.runners = []; }
   /** Mystery Symbol: key cells turn into envelopes, then reveal the marked symbol and its multiplier. */
   async mystery(sp: Spin, sym: number, mult: number) {
     const cells: { r: number; row: number; s: Sprite }[] = [];
@@ -217,7 +222,7 @@ export class Board {
       void mult; gsap.fromTo(s.scale, { x: s.scale.x * 1.4, y: s.scale.y * 1.4 }, { x: s.scale.x, y: s.scale.y, duration: .4, ease: 'back.out(3)' }); }
     sfx.tierUp(1); await wait(this.turbo ? 500 : 1200); bs.forEach(b => b.destroy());
   }
-  private ways: Set<string>[] = []; private deco = new Map<string, Container[]>(); private cyc = 0;
+  private shineMask = new Graphics(); private shineL = new Container(); private ways: Set<string>[] = []; private deco = new Map<string, Container[]>(); private cyc = 0;
   /** Win presentation: dim others, punch + shine + gold frame on winners. No lines, no labels on the board. */
   showWins(sp: Spin) {
     if (!sp.wins.length) return; sfx.hit(sp.win);
@@ -229,7 +234,7 @@ export class Board {
         return c.s === w.sym || c.s === S.WILD || c.s === S.DWILD || (c.s === S.EXPAND && c.x === w.sym); });
       const set = new Set<string>(); for (let r = 0; r < w.len; r++) for (const row of rows(r)) { hit.add(r + ':' + row); set.add(r + ':' + row); } this.ways.push(set);
     });
-    this.deco.clear();
+    this.deco.clear(); this.shineMask = new Graphics(); this.shineL = new Container(); this.shineL.mask = this.shineMask; this.winL.addChild(this.shineMask, this.shineL);
     this.reels.forEach((reel, r) => [1, 2, 3, 0, 4].forEach((row, k) => {
       const spr = this.cellSpr(r, row);
       if (row === 0 || row === 4) { if (!reel.vault[row === 0 ? 0 : 1].open) return; }
@@ -239,7 +244,7 @@ export class Board {
       if (cell && cell.s >= 6 && cell.s <= 9) gsap.to(spr, { rotation: .06, duration: .14, yoyo: true, repeat: 3, ease: 'sine.inOut', delay: .25 + d, onComplete: () => { spr.rotation = 0; } });
       gsap.timeline({ delay: d }).fromTo(spr.scale, { x: sx * 1.18, y: sy * 1.18 }, { x: sx, y: sy, duration: .4, ease: 'back.out(3)' }).to(spr.scale, { x: sx * 1.04, y: sy * 1.04, duration: .6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
       const p = this.pos(r, row); const sh = new Sprite(this.shine); sh.anchor.set(.5); sh.width = C * .7; sh.height = C * 1.6; sh.rotation = .5; sh.blendMode = 'add'; sh.alpha = .7;
-      const mask = new Graphics().roundRect(p.x - C / 2 + 4, p.y - C / 2 + 4, C - 8, C - 8, 10).fill(0xffffff); this.winL.addChild(mask, sh); sh.mask = mask; sh.y = p.y;
+      this.shineMask.roundRect(p.x - C / 2 + 4, p.y - C / 2 + 4, C - 8, C - 8, 10).fill(0xffffff); this.shineL.addChild(sh); sh.y = p.y;
       gsap.fromTo(sh, { x: p.x - C }, { x: p.x + C, duration: .7, delay: .15 + d, repeat: -1, repeatDelay: 1.4, ease: 'power1.inOut' });
       const fr = new Graphics().roundRect(p.x - C / 2 + 3, p.y - C / 2 + 3, C - 6, C - 6, 14).stroke({ color: 0xf5c542, width: 4 }).roundRect(p.x - C / 2, p.y - C / 2, C, C, 16).stroke({ color: 0xf5c542, width: 8, alpha: .25 });
       this.winL.addChild(fr); gsap.from(fr, { alpha: 0, duration: .3, delay: d }); this.deco.set(r + ':' + row, [fr, sh]);
@@ -291,7 +296,7 @@ export class Board {
     this.shake(4); await wait(this.turbo ? 120 : 300);
   }
   clearWins() {
-    this.cyc++; this.ways = []; this.deco.clear(); for (const ch of [...this.winL.children]) { gsap.killTweensOf(ch); ch.destroy(); }
+    this.cyc++; this.ways = []; this.deco.clear(); for (const ch of [...this.winL.children]) { killDeep(ch as Container); ch.destroy({ children: true }); }
     this.reels.forEach(r => { r.cells.forEach(s => { s.rotation = 0; }); [...r.cells, ...r.vault.map(v => v.content)].forEach(s => { gsap.killTweensOf(s); gsap.killTweensOf(s.scale); s.alpha = 1; s.width = s.height = C; }); });
   }
 }

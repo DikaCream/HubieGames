@@ -361,3 +361,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:4px;borde
 .msgbar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 @media (max-width:480px){.msgbar{letter-spacing:.06em;font-size:clamp(13px,3.8vw,18px)}}
 .c-mark span{text-transform:none}
+/* ===== v15 perf: keep animated full screen layers on the compositor ===== */
+.bg,.rain,.sweep,.c-rays,.bw-rays{will-change:transform;backface-visibility:hidden}
+.c-bg{filter:none;opacity:.38}
+.fx{will-change:contents}

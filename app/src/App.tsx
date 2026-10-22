@@ -286,7 +286,7 @@ export default function App() {
     } finally { setBusy(false); }
   }
 
-  useEffect(() => { if (FORCE) (window as unknown as { __hrDemo?: (k: string) => Promise<void> }).__hrDemo = demo; });
+  useEffect(() => { if (FORCE) { const w = window as unknown as Record<string, unknown>; w.__hrDemo = demo; w.__hr = { gsap, board: board.current, fx: fx.current }; } });
   const overlayOn = !!(cine || big);
   return <div className={`app ${SHOWCASE ? 'sc' : ''} ${bonus ? 'bonus' : ''} ${overlayOn ? 'covered' : ''}`}>
     <div className="bg" style={{ ['--bg' as string]: `url(${ART(bonus ? 'bonus_bg' : 'bg')})`, ['--bgt' as string]: `url(${ART(bonus ? 'bonus_bg' : 'bg_tall')})` }} />
