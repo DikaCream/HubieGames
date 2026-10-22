@@ -355,3 +355,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:4px;borde
 @media (max-width:480px){.exs{grid-template-columns:1fr}.exc{display:grid;grid-template-columns:110px 1fr;column-gap:10px}.exc .mini{grid-row:span 2}}
 .tk-note{margin:2px 0;font-size:13px;line-height:1.3;color:#eaf7fa;font-family:system-ui,sans-serif;text-transform:none;letter-spacing:0}
 @media (max-width:760px){.ticket{grid-template-rows:auto auto auto}.ticket .tk-note{grid-column:1/-1;grid-row:3;text-align:left;margin-top:4px}}
+/* ===== v14 ===== */
+.c-tap{animation:tapfade 1.8s ease-in-out infinite alternate}@keyframes tapfade{from{opacity:.6}to{opacity:1}}
+.cine{cursor:pointer}
+.msgbar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+@media (max-width:480px){.msgbar{letter-spacing:.06em;font-size:clamp(13px,3.8vw,18px)}}
+.c-mark span{text-transform:none}

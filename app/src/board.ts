@@ -87,7 +87,7 @@ export class Board {
     this.root.addChild(this.winL, this.runL, this.fxL);
     this.app.ticker.add(tk => this.tick(tk.deltaMS));
   }
-  setSkin(bonus: boolean) { this.bonus = bonus; this.reels.forEach(r => (r.c.children[0] as Graphics).clear().roundRect(0, MAIN_Y, C, 3 * C, 10).fill({ color: bonus ? 0x1c0c05 : 0x06141a, alpha: .86 })); }
+  setSkin(bonus: boolean) { this.bonus = bonus; this.reels.forEach(r => (r.c.children[0] as Graphics).clear().roundRect(0, MAIN_Y, C, 3 * C, 10).fill({ color: bonus ? 0x1c0c05 : 0x06141a, alpha: bonus ? .6 : .86 })); }
   private layout(r: Reel) { r.slots.forEach((sl, i) => { sl.spr.x = C / 2; sl.spr.y = MAIN_Y + (i - 1) * C + C / 2 + r.pos; }); }
   private setSlot(sl: Slot, s: number, t: 'plain' | 'blur' | 'split') { sl.s = s; sl.spr.texture = (t === 'blur' ? this.blur : t === 'split' ? this.splitT : this.plain)[s]; sl.spr.width = sl.spr.height = C; }
 
@@ -193,7 +193,7 @@ export class Board {
   /** Runners move to their new cells; on a split reel they double (badge punch). */
   async moveRunners(list: Runner[], first: boolean) {
     while (this.runners.length < list.length) { const c = new Container(); const s = new Sprite(this.T.runner); s.anchor.set(.5); s.width = s.height = C * .98; c.addChild(s);
-      const b = badge('x1', 0x02f7fd, 20); b.x = C * .28; b.y = -C * .32; b.visible = false; c.addChild(b); const p = this.pos(2, 2); c.x = p.x; c.y = p.y; c.scale.set(0); this.runL.addChild(c); this.runners.push({ c, b, m: 1 }); }
+      const b = new Container(); c.addChild(b); const p = this.pos(2, 2); c.x = p.x; c.y = p.y; c.scale.set(0); this.runL.addChild(c); this.runners.push({ c, b, m: 1 }); }
     await Promise.all(list.map(async (rn, i) => { const R = this.runners[i]; const p = this.pos(rn.r, rn.row);
       if (first || R.c.scale.x === 0) { R.c.x = p.x; R.c.y = p.y; await gsap.to(R.c.scale, { x: 1, y: 1, duration: .35, ease: 'back.out(2.5)' }); }
       else { sfx.whoosh(); const x0 = R.c.x, y0 = R.c.y, o = { k: 0 }; const h = 60 + Math.hypot(p.x - x0, p.y - y0) * .35;
@@ -201,10 +201,10 @@ export class Board {
           if (Math.random() < .7) this.burst(R.c.x, R.c.y, 2, 0x02f7fd, .45); } }); R.c.rotation = 0; sfx.reelStop(2); this.shake(3);
         gsap.fromTo(R.c.scale, { x: 1.25, y: .8 }, { x: 1, y: 1, duration: .3, ease: 'back.out(3)' }); }
       this.ring(p.x, p.y, 0x02f7fd);
-      if (rn.doubled) { await wait(i * 160); const sb = await this.slamMult(rn.r, rn.row, 'x' + rn.m); sb.destroy(); sfx.mult(Math.log2(rn.m)); this.setBadge(R, rn.m); this.burst(p.x, p.y, 24, 0xf5c542, 1.3); gsap.fromTo(R.c.scale, { x: 1.35, y: 1.35 }, { x: 1, y: 1, duration: .4, ease: 'back.out(3)' }); }
+      if (rn.doubled) { await wait(i * 160); sfx.multSlam(); this.shake(5); this.ring(p.x, p.y, 0xf5c542); this.ring(p.x, p.y, 0xffffff); await wait(this.turbo ? 200 : 450); sfx.mult(Math.log2(rn.m)); this.setBadge(R, rn.m); this.burst(p.x, p.y, 24, 0xf5c542, 1.3); gsap.fromTo(R.c.scale, { x: 1.35, y: 1.35 }, { x: 1, y: 1, duration: .4, ease: 'back.out(3)' }); }
       else this.setBadge(R, rn.m); }));
   }
-  private setBadge(R: { c: Container; b: Container; m: number }, m: number) { if (R.m === m && R.b.parent) return; R.m = m; R.b.destroy(); const b = badge('x' + m, 0xf5c542, 20); b.x = C * .28; b.y = -C * .32; b.visible = m > 1; R.c.addChild(b); R.b = b; gsap.from(b.scale, { x: 1.8, y: 1.8, duration: .3, ease: 'back.out(3)' }); }
+  private setBadge(R: { c: Container; b: Container; m: number }, m: number) { if (R.m === m && R.b.parent) return; R.m = m; R.b.destroy(); const b = new Container(); if (m > 1) { const g = new Graphics().roundRect(-C * .49, -C * .49, C * .98, C * .98, 16).stroke({ color: 0xf5c542, width: 5 }); b.addChild(g); gsap.to(g, { alpha: .45, duration: .6, yoyo: true, repeat: -1 }); } R.c.addChild(b); R.b = b; }
   clearRunners() { this.runners.forEach(r => r.c.destroy({ children: true })); this.runners = []; }
   /** Mystery Symbol: key cells turn into envelopes, then reveal the marked symbol and its multiplier. */
   async mystery(sp: Spin, sym: number, mult: number) {
@@ -214,7 +214,7 @@ export class Board {
     sfx.riser(1); await wait(this.turbo ? 350 : 800);
     const bs: Container[] = [];
     for (const { r, row, s } of cells) { s.texture = this.plain[sym]; s.width = s.height = C; const p = this.pos(r, row); this.ring(p.x, p.y, 0xf5c542); this.burst(p.x, p.y, 18, 0xf5c542);
-      const b = badge('x' + mult, 0xf5c542, 26); b.x = p.x + C * .26; b.y = p.y + C * .34; this.fxL.addChild(b); bs.push(b); gsap.from(b.scale, { x: 0, y: 0, duration: .35, ease: 'back.out(3)' }); }
+      void mult; gsap.fromTo(s.scale, { x: s.scale.x * 1.4, y: s.scale.y * 1.4 }, { x: s.scale.x, y: s.scale.y, duration: .4, ease: 'back.out(3)' }); }
     sfx.tierUp(1); await wait(this.turbo ? 500 : 1200); bs.forEach(b => b.destroy());
   }
   private ways: Set<string>[] = []; private deco = new Map<string, Container[]>(); private cyc = 0;
@@ -271,8 +271,8 @@ export class Board {
   async flyDown(b: Container) { sfx.whoosh(); await gsap.to(b, { x: BW / 2, y: BH - 10, duration: this.turbo ? .25 : .5, ease: 'power2.in' }); this.burst(BW / 2, BH - 20, 26, 0xf5c542, 1.4); b.destroy(); }
   /** Big centred banner on the board canvas (meter, last call, retrigger). */
   async banner(text: string, color = 0xf5c542, ms = 900) {
-    const b = badge(text, color, 46); b.x = BW / 2; b.y = BH / 2; this.fxL.addChild(b); sfx.multSlam(); this.shake(6); this.burst(BW / 2, BH / 2, 40, color, 1.8);
-    gsap.fromTo(b.scale, { x: 2.6, y: 2.6 }, { x: 1, y: 1, duration: .35, ease: 'back.out(2)' }); await wait(this.turbo ? ms * .45 : ms);
+    const b = badge(text, color, 46); b.x = BW / 2; b.y = BH / 2; this.fxL.addChild(b); const fit = Math.min(1, BW * .88 / b.width); sfx.multSlam(); this.shake(6); this.burst(BW / 2, BH / 2, 40, color, 1.8);
+    gsap.fromTo(b.scale, { x: fit * 1.5, y: fit * 1.5 }, { x: fit, y: fit, duration: .3, ease: 'power3.out' }); await wait(this.turbo ? ms * .45 : ms);
     await gsap.to(b, { alpha: 0, duration: .2 }); b.destroy();
   }
   /** Hubie's Tip: wilds arc in from the left edge (Hubie's side) and slam onto their cells. */

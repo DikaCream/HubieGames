@@ -272,6 +272,8 @@ export default function App() {
       for (const [k, code] of [['premium', 6], ['bwild', S.WILD], ['split', S.SPLIT], ['expand', S.EXPAND]] as const) if (kind === k) await present(demoCache[k] ??= findSpin(rv(code)), false);
       if (kind.startsWith('intro')) { const t = TIERS[+kind.slice(5)]; setCine({ kind: 'in', tier: t, marked: { sym: 6 + +kind.slice(5), mult: [3, 5, 10][+kind.slice(5)] } }); sfx.bonus(); await mounted(cineTap); await tapOrAuto(4000); setCine(null); }
       if (kind.startsWith('end')) { const ti = +(kind[3] ?? 1), x = [0, 12, 64, 260, 1100][+(kind[4] ?? 2)]; const c = x * R.current.bet; setCine({ kind: 'out', tier: TIERS[ti], totalC: c, x, cost: TIERS[ti].buy }); await outroCount(c, R.current.bet, TIERS[ti].buy); setMusicMode('end'); await tapOrAuto(4000); fx.current?.clear(); setCine(null); setMusicMode('base'); }
+      if (kind.startsWith('fbig')) { const ti = +kind.slice(4); const x = [32, 84, 236, 1240][ti]; R.current.cap = MAX_WIN * R.current.bet; tb.current = R.current.turbo; setBonus({ tier: TIERS[1], played: 3, total: 10, marked: { sym: 7, mult: 2 }, runners: [] }); bonusOn.current = true; board.current.setSkin(true); setMusicMode('bonus'); setPose('bonus');
+        await wait(300); setWin(x * R.current.bet, .5); await wait(600); await bigWin(x, x * R.current.bet); setBonus(null); bonusOn.current = false; board.current.setSkin(false); setMusicMode('base'); setPose('idle'); }
       if (kind === 'tip') await present(demoCache.tip ??= findSpin(s => s.tip.length >= 2, false), false);
       if (kind === 'raid') await present(demoCache.raid ??= findSpin(s => !!s.raid, false), false);
       if (kind === 'lucky') await present(demoCache.lucky ??= findSpin(s => s.lucky, false), false);
