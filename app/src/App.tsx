@@ -301,7 +301,7 @@ export default function App() {
           </div>
           <div className="r">
             <button className={`ic md ${auto ? 'on' : ''}`} title="Autoplay" aria-label="Autoplay" disabled={!!armed || (busy && !auto)} onClick={() => { sfx.click(); auto ? setAuto(null) : setModal('auto'); }}><svg viewBox="0 0 24 24"><path d="M5 12a7 7 0 0 1 12-5l2-2v6h-6l2-2a4.5 4.5 0 1 0 1 5h2.6A7 7 0 0 1 5 12z" fill="currentColor" /></svg><em>{auto ? 'STOP' : 'AUTO'}</em></button>
-            <button className={`ic md ${turbo ? 'on' : ''}`} title="Turbo: faster spins" aria-label="Turbo" onClick={() => { sfx.click(); setTurbo(t => !t); }}><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="currentColor" /></svg><em>TURBO</em></button>
+            <button className={`ic md turbo ${turbo ? 'on' : ''}`} title="Turbo: faster spins" aria-label="Turbo" onClick={() => { sfx.click(); setTurbo(t => !t); }}><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="currentColor" /></svg><em>TURBO</em></button>
           </div>
         </div>
       </footer>
@@ -365,7 +365,7 @@ export default function App() {
         <label>STOP IF BALANCE RISES BY</label><div className="opts">{[0, 10, 50, 100, 500].map(v => <button key={v} className={autoCfg.gain === v ? 'on' : ''} onClick={() => setAutoCfg(c => ({ ...c, gain: v }))}>{v ? `${v}x · ${usd(v * bet)}` : 'OFF'}</button>)}</div>
         <p className="mut help">Limits count from your balance when autoplay starts ({usd(balance)}). Autoplay keeps going through wins and free spins, collects big wins by itself after a few seconds, and never buys a bonus. Press STOP at any time.</p>
         <button className="cta wide" onClick={() => { sfx.click(); setAuto({ ...autoCfg, start: balance }); setModal(null); }}>START {autoCfg.left} ROUNDS · {usd(autoCfg.left * bet)}</button></div>}
-      {modal === 'info' && <><div className="settings"><span>SETTINGS</span><button className={`pill ${musicOn ? 'on' : ''}`} onClick={() => setMusic(m => !m)}>MUSIC {musicOn ? 'ON' : 'OFF'}</button><button className={`pill ${sfxOnS ? 'on' : ''}`} onClick={() => setSfxS(m => !m)}>SOUND {sfxOnS ? 'ON' : 'OFF'}</button></div><div className="tabs">{['Features', 'Examples', 'Paytable', 'Rules'].map((t, i) => <button key={t} className={tab === i ? 'on' : ''} onClick={() => setTab(i)}>{t}</button>)}</div>
+      {modal === 'info' && <><div className="settings"><span>SETTINGS</span><button className={`pill ${turbo ? 'on' : ''}`} onClick={() => setTurbo(t => !t)}>TURBO {turbo ? 'ON' : 'OFF'}</button><button className={`pill ${musicOn ? 'on' : ''}`} onClick={() => setMusic(m => !m)}>MUSIC {musicOn ? 'ON' : 'OFF'}</button><button className={`pill ${sfxOnS ? 'on' : ''}`} onClick={() => setSfxS(m => !m)}>SOUND {sfxOnS ? 'ON' : 'OFF'}</button></div><div className="tabs">{['Features', 'Examples', 'Paytable', 'Rules'].map((t, i) => <button key={t} className={tab === i ? 'on' : ''} onClick={() => setTab(i)}>{t}</button>)}</div>
         {tab === 0 && <div className="blocks">
           {[['locked', 'Locked Cells', 'Each reel has a locked cell above and below it. 1 or 2 Keys open the cells on their reels. 3 or more Keys start free spins instead.'],
             ['h1', 'Crew Symbol', 'An open cell can show a crew symbol. It adds one more symbol to that reel.'],
