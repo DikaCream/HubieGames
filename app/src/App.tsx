@@ -264,7 +264,7 @@ export default function App() {
 
   // Showcase helpers. Demo spins use throwaway random floats and never touch the balance.
   async function demo(kind: string) {
-    if (busy || !board.current) return; setBusy(true); startAmbient(); R.current.winC = 0; setWinC(0);
+    if (busy || !board.current) return; setBusy(true); startAmbient(); R.current.winC = 0; setWinC(0); paint(0);
     const rv = (k: number) => (s: Spin) => s.reveals.some(r => k === 6 ? r.cell.s >= 6 : r.cell.s === k) && s.keys < 3;
     try {
       if (kind.startsWith('big')) { const x = [32, 84, 236, 1240][+kind.slice(3)]; tb.current = R.current.turbo; R.current.winC = x * R.current.bet; paint(x * R.current.bet); await bigWin(x, x * R.current.bet); }
