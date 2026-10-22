@@ -64,6 +64,9 @@ export class Board {
   async init(host: HTMLElement) {
     await this.app.init({ width: BW, height: BH, backgroundAlpha: 0, antialias: (devicePixelRatio || 1) < 2, resolution: Math.min(devicePixelRatio || 1, 2), autoDensity: true, preference: 'webgl' });
     const cv = this.app.canvas; cv.style.width = '100%'; cv.style.height = '100%'; cv.style.display = 'block'; host.appendChild(cv);
+    // Backing store sized to the pixels the board actually covers on screen (the board is shown well below its 644 px design size on phones).
+    const fit = () => { const w = host.getBoundingClientRect().width || BW; const res = Math.max(1, Math.min(2, w * (devicePixelRatio || 1) / BW)); if (Math.abs(res - this.app.renderer.resolution) > .05) { this.app.renderer.resolution = res; this.app.renderer.resize(BW, BH); cv.style.width = '100%'; cv.style.height = '100%'; } };
+    fit(); new ResizeObserver(fit).observe(host);
     const imgs = await Promise.all(SYM.map(n => loadImg(ART(n))));
     const cards = new Set([S.WILD, S.DWILD, 6, 7, 8, 9, 10, 11, 12, 13]);
     this.plain = imgs.map((im, i) => tex(im, 'plain', i, cards.has(i as 0))); this.blur = imgs.map((im, i) => tex(im, 'blur', i, cards.has(i as 0)));

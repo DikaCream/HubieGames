@@ -9,7 +9,7 @@ await p.addInitScript(() => { window.__lt = []; new PerformanceObserver(l => l.g
   window.__fr = 0; const f = () => { window.__fr++; requestAnimationFrame(f); }; requestAnimationFrame(f);
   const AC = window.AudioContext; let nodes = 0; window.__an = () => nodes; for (const m of ['createOscillator', 'createGain', 'createBufferSource', 'createBiquadFilter']) { const o = AC.prototype[m]; AC.prototype[m] = function () { nodes++; return o.apply(this, arguments); }; } });
 const cdp = await p.context().newCDPSession(p); await cdp.send('Performance.enable');
-await p.goto('http://127.0.0.1:4180/?force=perf'); await p.waitForSelector('.ov.slides', { timeout: 60000 }); await p.tap('.cta', { force: true }); await W(1500);
+await p.goto((process.env.URL || 'http://127.0.0.1:4180/') + '?force=perf'); await p.waitForSelector('.ov.slides', { timeout: 60000 }); await p.tap('.cta', { force: true }); await W(1500);
 for (let i = 0; i < 6; i++) { await p.tap('.pm[aria-label="Lower bet"]', { force: true }); await W(80); }
 await p.evaluate(() => document.querySelector('.ic.turbo').click()); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
 const samples = []; let phase = 'idle'; let lastFr = 0, lastT = Date.now(), ltSeen = 0;
@@ -25,7 +25,7 @@ const heapAt = [];
 for (let k = 0; k < N; k++) {
   phase = 'bonus' + (k + 1);
   await p.tap('.buy2', { force: true }); await W(600); await p.tap('.ticket.t1', { force: true }); await W(400); if (await p.$('.confirm .chk input')) { if (!(await p.$eval('.confirm .chk input', e => e.checked))) await p.tap('.confirm .chk input', { force: true }); } if (await p.$('.confirm .cta')) await p.tap('.confirm .cta', { force: true }); await W(500);
-  for (let t = 0; t < 400; t++) { if (await p.$('.cine')) await p.evaluate(() => document.querySelector('.cine')?.click()); if (await p.$('.bigwin.x')) {} 
+  for (let t = 0; t < 400; t++) { if (await p.$('.cine')) await p.evaluate(() => document.querySelector('.cine')?.click()); if (await p.$('.bigwin .bw-hint')) { const h = await p.textContent('.bigwin .bw-hint').catch(() => ''); if (/COLLECT/.test(h)) await p.evaluate(() => document.querySelector('.bigwin')?.click()); }
     if (!(await p.$('.spin.busy'))) break; await W(700); }
   phase = 'bigwin' + (k + 1); const run = p.evaluate(() => window.__hrDemo('fbig3')); for (let t = 0; t < 40 && !(await p.$('.bigwin .bw-hint')); t++) await W(300); await W(9000); await p.evaluate(() => document.querySelector('.bigwin')?.click()); await W(800); await p.evaluate(() => document.querySelector('.bigwin')?.click()); await run;
   phase = 'rest'; await W(2500); await p.evaluate(() => window.gc && window.gc()); await W(500); await sample(); heapAt.push(samples.at(-1));
