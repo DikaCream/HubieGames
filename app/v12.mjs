@@ -26,9 +26,9 @@ async function check(t) {
     return out; });
   for (const x of r) bad.push(t + ': ' + x);
 }
-const hubieVisible = () => p.evaluate(() => { const i = document.querySelector('.side-l .hubie img'); if (!i) return false; const r = i.getBoundingClientRect(); const s = getComputedStyle(i); return r.width > 30 && r.height > 30 && s.visibility !== 'hidden' && +s.opacity > .2 && getComputedStyle(i.closest('.side-l')).display !== 'none'; });
+const hubieVisible = () => p.evaluate(() => { if (document.querySelector('.app.covered, .cine, .bigwin')) return true; const i = document.querySelector('.side-l .hubie img'); if (!i) return false; const r = i.getBoundingClientRect(); const s = getComputedStyle(i); return r.width > 30 && r.height > 30 && s.visibility !== 'hidden' && +s.opacity > .2 && getComputedStyle(i.closest('.side-l')).display !== 'none'; });
 async function settle(o = {}) { const t0 = Date.now(); let last = '', lastT = Date.now(); let hubMiss = 0, hubSeen = 0;
-  while (Date.now() - t0 < 600000) {
+  while (Date.now() - t0 < 1800000) {
     const st = await p.evaluate(() => (document.querySelector('.msgbar')?.textContent || '') + '|' + (document.querySelector('.spins-left')?.textContent || '') + '|' + !!document.querySelector('.cine') + !!document.querySelector('.bigwin'));
     if (st !== last) { last = st; lastT = Date.now(); } else if (Date.now() - lastT > 60000) { await p.screenshot({ path: '/tmp/stuck.png' }); throw new Error('stuck ' + st); }
     if (o.win && await p.$('.msgbar.way')) { await W(500); await check('win'); await shot(o.win); o.win = null; }

@@ -361,7 +361,7 @@ export default function App() {
           {cine.marked && <div className="c-mark"><span>MYSTERY SYMBOL</span><img src={IMG(cine.marked.sym)} /><b>x{cine.marked.mult}</b><span>on {NAMES[cine.marked.sym]} wins</span></div>}</div></div>
         <div className="c-tap">{R.current.auto ? 'STARTING' : 'TAP TO START'}</div></div>
         : (() => { const ti = cine.totalC ? tierOf(cine.x ?? 0) : -1; const band = cine.totalC ? ti + 1 : 0; return <div className={`c-wrap out end b${band}`}>
-          <div className="end-art"><img src={ART(END_ART[cine.tier.id - 1])} alt="Hubie" /><span className="end-line">{END_LINES[cine.tier.id - 1][Math.max(0, ti)]}</span></div>
+          <div className="end-art"><img src={ART(END_ART[cine.tier.id - 1])} alt="Hubie" /><span className="end-line">{END_LINES[cine.tier.id - 1][[0, 1, 2, 2, 3][band]]}</span></div>
           <small className="c-kicker">{cine.tier.name} COMPLETE</small>
           {cine.totalC ? <><div className="cine-tier">{ti >= 0 ? TIERS_WIN[ti].t : END_HEAD[cine.tier.id - 1]}</div><div className="cine-total">{usd(0)}</div></>
             : <><div className="cine-tier calm">NO WIN THIS TIME</div><div className="c-calm">THE HOUSE IS ALWAYS OPEN. TRY AGAIN.</div></>}
