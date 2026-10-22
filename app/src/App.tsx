@@ -384,7 +384,7 @@ export default function App() {
         <b>{t.name}</b><span>{t.spins} free spins · {t.runners} Roaming Wild{t.runners > 1 ? 's' : ''}</span><p className="tk-note">{BUY_NOTE[t.id - 1]}</p><em>{usd(t.buy * bet)}</em><small>RTP {RTP.buys[t.id - 1]}</small></button>)}</div>}
       {modal === 'confirm' && pick && <div className="confirm"><p>You are buying <b>{pick.name}</b>. Price: <b>{usd(pick.buy * bet)}</b> at a {usd(bet)} bet. Free spins start right away.</p>
         <label className="chk"><input type="checkbox" checked={dontAsk} onChange={e => { setDontAsk(e.target.checked); localStorage.setItem('hr_noask', e.target.checked ? '1' : '0'); }} /> Do not show this again</label>
-        <div className="row"><button className="pill" onClick={() => setModal('buy')}>BACK</button><button className="cta" onClick={() => { sfx.click(); startBuy(pick); }}>BUY AND START</button></div></div>}
+        <div className="row"><button className="pill" onClick={() => setModal('buy')}>BACK</button><button className="cta" onClick={() => { sfx.click(); startBuy(pick); }}>START</button></div></div>}
       {modal === 'auto' && <div className="autom">
         <label>NUMBER OF ROUNDS</label><div className="opts">{[10, 25, 50, 100, 250, 1000].map(v => <button key={v} className={autoCfg.left === v ? 'on' : ''} onClick={() => setAutoCfg(c => ({ ...c, left: v }))}>{v}</button>)}</div>
         <label>STOP IF A ROUND WIN IS AT LEAST</label><div className="opts">{[0, 50, 100, 500, 1000].map(v => <button key={v} className={autoCfg.stopWin === v ? 'on' : ''} onClick={() => setAutoCfg(c => ({ ...c, stopWin: v }))}>{v ? usd(v * bet) : 'OFF'}</button>)}</div>

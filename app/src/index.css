@@ -354,3 +354,4 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:4px;borde
 .mini.sm{max-width:150px}.mini.sm img{opacity:1}
 @media (max-width:480px){.exs{grid-template-columns:1fr}.exc{display:grid;grid-template-columns:110px 1fr;column-gap:10px}.exc .mini{grid-row:span 2}}
 .tk-note{margin:2px 0;font-size:13px;line-height:1.3;color:#eaf7fa;font-family:system-ui,sans-serif;text-transform:none;letter-spacing:0}
+@media (max-width:760px){.ticket{grid-template-rows:auto auto auto}.ticket .tk-note{grid-column:1/-1;grid-row:3;text-align:left;margin-top:4px}}
