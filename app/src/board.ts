@@ -20,7 +20,7 @@ interface Reel { c: Container; strip: Container; slots: Slot[]; pos: number; spe
 type Particle = { s: Sprite; vx: number; vy: number; life: number; max: number; g: number };
 
 async function loadImg(url: string) { const i = new Image(); i.src = url; await i.decode().catch(() => {}); return i; }
-const FRAME: Record<number, string> = { 0: '#f5c542', 1: '#02F7FD', 2: '#f5c542', 3: '#02F7FD', 4: '#f5c542', 5: '#f5c542', 6: '#02F7FD', 7: '#ff8a3d', 8: '#e0384e', 9: '#f5c542', 10: '#3d8f9c', 11: '#3d8f9c', 12: '#3d8f9c', 13: '#3d8f9c' };
+const FRAME: Record<number, string> = { 0: '#f5c542', 1: '#02F7FD', 2: '#f5c542', 3: '#02F7FD', 4: '#f5c542', 5: '#f5c542', 6: '#a865ff', 7: '#ff8a3d', 8: '#e0384e', 9: '#f5c542', 10: '#3ccf6e', 11: '#3d8f9c', 12: '#3d8f9c', 13: '#3d8f9c' };
 /** One frame system for every symbol: dark rounded card, art inside, coloured rim. Full art cards are cropped to cover; cut out icons sit on a tinted glow. */
 function drawFramed(x: CanvasRenderingContext2D, img: HTMLImageElement, sym: number, card: boolean, X: number, Y: number, W: number) {
   const col = FRAME[sym] ?? '#5aa7b5', r = W * .14, inset = W * .04;
