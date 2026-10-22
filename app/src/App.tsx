@@ -28,6 +28,7 @@ const TIER_RULES = [
   ['10 free spins', '2 Roaming Wilds', 'Each Key adds a free spin'],
   ['10 free spins', '3 Roaming Wilds', 'Each Key adds a free spin'],
 ];
+const MULT_WORD = (m: number) => m === 2 ? 'double' : m === 3 ? 'triple' : `${['', '', '', '', 'four', 'five', 'six', 'seven', 'eight'][m] || m} times`;
 const BUY_NOTE = ['The cheapest way in, with 1 Roaming Wild.', 'Two Roaming Wilds for bigger multipliers.', 'Three Roaming Wilds for the biggest wins.'];
 const SLIDES = [
   { art: 'end_ht', t: 'WELCOME TO THE HOUSE', d: `Match symbols on neighbouring reels from the left. Win up to ${MAX_WIN.toLocaleString()} times your bet.` },
@@ -58,7 +59,6 @@ export default function App() {
   const [turbo, setTurbo] = useState(false);
   const [musicOn, setMusic] = useState(true); const [sfxOnS, setSfxS] = useState(true);
   const [pose, setPose] = useState<Pose>('idle');
-    const [xtag, setXtag] = useState('');
   const [msg, setMsg] = useState<{ t: string; k?: string; img?: number; amt?: string }>({ t: 'PLACE YOUR BET' });
   const [ways, setWays] = useState(243);
   const [winC, setWinC] = useState(0);
@@ -84,8 +84,8 @@ export default function App() {
   const tapWait = useRef<(() => void) | null>(null); const popRef = useRef<HTMLDivElement>(null);
   const bwRef = useRef<HTMLDivElement>(null), bwAmt = useRef<HTMLDivElement>(null), bwTitle = useRef<HTMLDivElement>(null), bwHub = useRef<HTMLImageElement>(null), bwHint = useRef<HTMLDivElement>(null);
   const cineTotal = useRef<HTMLDivElement>(null), cineTap = useRef<HTMLDivElement>(null); const tb = useRef(false);
-  const R = useRef({ turbo: false, bet: 100, auto: null as Auto | null, balance: 1000000, armed: null as Tier | null, winC: 0 });
-  R.current.turbo = turbo; R.current.bet = bet; R.current.auto = auto; R.current.balance = balance; R.current.armed = armed;
+  const R = useRef({ turbo: false, bet: 100, auto: null as Auto | null, balance: 1000000, armed: null as Tier | null, winC: 0, cap: 0, modal: null as Modal });
+  R.current.turbo = turbo; R.current.bet = bet; R.current.auto = auto; R.current.balance = balance; R.current.armed = armed; R.current.modal = modal;
   const T = (ms: number) => wait(tb.current ? ms * .4 : ms);
 
   useEffect(() => { let n = 0; const all = ALL_ART();
@@ -128,7 +128,7 @@ export default function App() {
   const shown = useRef(0); const winTw = useRef<gsap.core.Tween | null>(null); const msgAmt = useRef<HTMLSpanElement | null>(null);
   const paint = (c: number) => { shown.current = c; const t = usd(c); if (winRef.current) winRef.current.textContent = t; }; void msgAmt; const msgHold = useRef(false); const quiet = useRef(false);
   /** Single source of truth: integer cents in R.current.winC; every counter paints the same tweened value. */
-  function setWin(to: number, dur = .8) { R.current.winC = to; setWinC(to); winTw.current?.kill(); const o = { v: shown.current };
+  function setWin(to: number, dur = .8) { to = Math.min(to, R.current.cap || to); R.current.winC = to; setWinC(to); winTw.current?.kill(); const o = { v: shown.current };
     if (to <= o.v) { paint(to); return; }
     winTw.current = gsap.to(o, { v: to, duration: tb.current ? dur * .3 : dur, ease: 'power1.out', onUpdate: () => { paint(Math.max(shown.current, Math.min(to, Math.round(o.v)))); if (Math.random() < .3) sfx.tick(); }, onComplete: () => paint(to) }); }
 
@@ -143,7 +143,7 @@ export default function App() {
   const cheer = () => { const el = document.querySelector('.app'); el?.classList.remove('cheer'); void (el as HTMLElement)?.offsetWidth; el?.classList.add('cheer'); sfx.cheer(); };
   async function present(sp: Spin, antic: boolean, firstFree = false) {
     const b = board.current!; const betC = R.current.bet; fx.current?.clear(); tb.current = R.current.turbo;
-    setMsg({ t: sp.free ? 'FREE SPIN' : 'GOOD LUCK' }); sfx.spinStart(); setWays(243); setXtag(''); msgHold.current = false;
+    setMsg({ t: sp.free ? 'FREE SPIN' : 'GOOD LUCK' }); sfx.spinStart(); setWays(243); msgHold.current = false;
     if (sp.free) setBonus(bn => bn && { ...bn, played: bn.played + 1, added: 0 });
     if (sp.tip.length) { setMsg({ t: "HUBIE'S TIP", k: 'feat' }); say('react', 1600); }
     if (sp.lastCall) { setMsg({ t: 'LAST CALL', k: 'feat' }); say('bonus', 1600); await b.banner('LAST CALL', 0xff8a3d, 900); }
@@ -157,21 +157,18 @@ export default function App() {
     if (sp.reveals.length) await b.openCells(sp);
     if (sp.split.some(Boolean)) { setMsg({ t: 'SPLIT REEL', k: 'feat' }); await b.applySplits(sp); }
     if (sp.runners.length) { await b.moveRunners(sp.runners, firstFree); setBonus(bn => bn && { ...bn, runners: sp.runners.map(x => ({ ...x })) });
-      if (sp.runners.some(r => r.doubled)) { setMsg({ t: 'MULTIPLIER DOUBLED', k: 'feat' }); say('bonus', 1100); cheer(); await T(200); } }
+      if (sp.runners.some(r => r.doubled)) { say('bonus', 1100); cheer(); await T(200); } }
     if (sp.agents) { setMsg({ t: 'DOUBLE AGENT: A WILD SPLITS IN TWO', k: 'feat' }); await b.banner('DOUBLE AGENT', 0x02f7fd, 800); }
     if (sp.free) setIntensity(sp.meter >= 4 || sp.runners.some(r => r.m >= 8) || sp.spinsLeft === 0 ? 3 : sp.meter >= 2 || sp.runners.some(r => r.m >= 2) ? 2 : 1);
-    if (sp.free && sp.meterAdd) { setBonus(bn => bn && { ...bn, meter: sp.meter }); setMsg({ t: `HOUSE METER x${sp.meter}`, k: 'mult' }); sfx.mult(sp.meter); b.shake(4); await T(700); }
+    if (sp.free && sp.meterAdd) { setBonus(bn => bn && { ...bn, meter: sp.meter }); sfx.mult(sp.meter); b.shake(4); await T(400); }
     setWays(sp.ways);
     const c = Math.round(sp.win * betC);
     if (c > 0) {
-      const marked = sp.wins.some(w => w.mult > 1);
-      const preC = Math.round(sp.pre * betC); const meterOn = sp.free && sp.meter > 1;
-      const ways = sp.wins.map(w => ({ img: w.sym, t: `${NAMES[w.sym].toUpperCase()} ${w.len} REELS${w.mult > 1 ? ' x' + w.mult : ''}`, amt: usd(Math.round(w.pay / (meterOn ? sp.meter : 1) * betC)) }));
+      const ways = sp.wins.map(w => ({ img: w.sym, t: `${NAMES[w.sym].toUpperCase()} ${w.len} REELS`, amt: usd(Math.round(w.pay * betC)) }));
       b.showWins(sp); const big = sp.win >= 5; const dur = sp.win < 1 ? .5 : sp.win < 5 ? .9 : 1.6;
-      if (marked && sp.marked) { msgHold.current = true; setMsg({ t: `x${sp.marked.mult}`, k: 'mult', img: sp.marked.sym }); sfx.multSlam(); await T(650); msgHold.current = false; }
-      setWin(R.current.winC + (meterOn ? preC : c), dur);
-      void b.cycleWays(i => { if (!msgHold.current && !quiet.current) setMsg({ ...ways[i], k: 'way' }); }, meterOn ? 2400 : 1400);
-      if (meterOn) { await T(dur * 1000 + 150); msgHold.current = true; setMsg({ t: `HOUSE METER x${sp.meter}`, k: 'mult' }); setXtag('x' + sp.meter); sfx.mult(sp.meter); setWin(R.current.winC - preC + c, 1.2); await T(1300); msgHold.current = false; }
+      if (sp.wins.some(w => w.mult > 1)) sfx.multSlam();
+      setWin(R.current.winC + c, dur);
+      void b.cycleWays(i => { if (!msgHold.current && !quiet.current && !R.current.modal) setMsg({ ...ways[i], k: 'way' }); }, 1400);
       if (big) cheer();
       await T(sp.win < 1 ? 700 : sp.win < 5 ? 1100 : 1800); }
     else if (!sp.free && sp.keys < 3) setMsg({ t: sp.keys === 2 ? 'SO CLOSE: ONE KEY SHORT' : 'NO LUCK THIS TIME', k: 'calm' });
@@ -195,16 +192,17 @@ export default function App() {
       if (ti >= 1) { ov.classList.remove('shake'); void ov.offsetWidth; ov.classList.add('shake'); }
       if (ti === 3 && !fw) { const boom = () => { if (!f) return; f.burst(45, innerWidth * (.15 + Math.random() * .7), innerHeight * (.12 + Math.random() * .4), ['spark'], 1.1); sfx.firework(); }; boom(); fw = window.setInterval(boom, 650); } };
     const marks = [0, ...TIERS_WIN.map(t => t.x).filter(v => v < x), x]; const tl = gsap.timeline({ paused: true }); const o = { v: 0 };
-    for (let i = 1; i < marks.length; i++) { const seg = i === 1 ? 1.6 : i === marks.length - 1 ? 1.8 : 2.4; tl.to(o, { v: marks[i], duration: seg * (turbo ? .45 : 1), ease: i === marks.length - 1 ? 'power2.out' : 'none' }); }
+    for (let i = 1; i < marks.length; i++) { const seg = (i === 1 ? 1.6 : i === marks.length - 1 ? 1.8 : 2.4) * (bonusOn.current ? .6 : 1); tl.to(o, { v: marks[i], duration: seg * (turbo ? .45 : 1), ease: i === marks.length - 1 ? 'power2.out' : 'none' }); }
     tl.eventCallback('onUpdate', () => { const ti = tierOf(o.v); if (ti >= 0) enter(ti); el.textContent = usd(Math.round(o.v / x * c)); if (Math.random() < .25) sfx.coin(); if (skip) tl.progress(1); });
     try {
       enter(0); await new Promise<void>(res => { tl.eventCallback('onComplete', () => res()); tl.play(); });
       enter(top); el.textContent = usd(c); gsap.fromTo(el, { scale: 1.25 }, { scale: 1, duration: .4, ease: 'back.out(3)' });
       if (bwHint.current) bwHint.current.textContent = R.current.auto ? 'COLLECTING' : 'TAP TO COLLECT';
-      await tapOrAuto(2500);
+      await tapOrAuto(bonusOn.current ? 1500 : 2500);
     } finally { tl.kill(); clearInterval(fw); if (f) f.clear(); setBig(null); setPose(bonusOn.current ? 'bonus' : 'idle'); setMusicMode(prevMode); setIntensity(bonusOn.current ? 2 : 1); quiet.current = false; }
   }
   /** Bonus end title: heist titles only when the result beats the price paid and reaches the first big win tier. */
+  const resultBand = (x: number, capped?: boolean) => capped || x >= 500 ? 3 : x >= 150 ? 2 : x >= 25 ? 1 : 0;
   const endInfo = (x: number, cost = 0) => { const good = x >= Math.max(TIERS_WIN[0].x, cost); const ti = good ? tierOf(x) : -1; return { good, ti, band: good ? ti + 1 : 0 }; };
 
   /** Bonus total: monotonic count up. */
@@ -227,24 +225,24 @@ export default function App() {
     const n = nonce; setNonce(n + 1); const buyTier = tier ? tier.id : 0; const cap = MAX_WIN * betC;
     post('roundStart', { bet: betC / 100, cost: cost / 100, buyTier, nonce: n, serverSeedHash: hash, clientSeed });
     const round: Round = await resolveRound(serverSeed, clientSeed, n, src => playRound(src, buyTier));
-    let total = Math.min(cap, await present(round.spins[0], !buyTier)); credit(total);
+    R.current.cap = cap; let total = Math.min(cap, await present(round.spins[0], !buyTier)); credit(total); const baseWin = total;
     if (total / betC >= TIERS_WIN[0].x) await bigWin(total / betC, total);
     if (round.tier && round.marked && total < cap) {
-      const t = round.tier; setMsg({ t: `${round.spins[0].keys} KEYS · ${t.name}`, k: 'feat' }); say('bonus', 1600); board.current.shake(8);
+      board.current.clearWins(); const t = round.tier; setMsg({ t: `${round.spins[0].keys} KEYS · ${t.name}`, k: 'feat' }); say('bonus', 1600); board.current.shake(8);
       await T(700); await board.current.mystery(round.spins[0], round.marked.sym, round.marked.mult);
       quiet.current = true; setCine({ kind: 'in', tier: t, marked: round.marked }); sfx.bonus(); await mounted(cineTap); await tapOrAuto(3000); setCine(null); quiet.current = false;
       setBonus({ tier: t, played: 0, total: t.spins, marked: round.marked, runners: [] }); setPose('bonus'); setMusicMode('bonus'); setIntensity(1); board.current.setSkin(true);
       const free = round.spins.filter(s => s.free); let first = true;
       for (const sp of free) { await T(200);
-        const sc = Math.min(cap - total, await present(sp, false, first)); total += sc; credit(sc); first = false;
-        if (sc / betC >= TIERS_WIN[0].x) { const ti = tierOf(sc / betC); msgHold.current = true; setMsg({ t: TIERS_WIN[ti].t, k: 'big', amt: usd(sc) }); sfx.winTier(ti); cheer(); await T(1500); msgHold.current = false; }
+        const sc = Math.min(cap - total, await present(sp, false, first)); total += sc; first = false;
+        if (sc / betC >= TIERS_WIN[0].x) await bigWin(sc / betC, sc);
         if (total >= cap) { msgHold.current = true; setMsg({ t: 'MAX WIN REACHED', k: 'big', amt: usd(total) }); await board.current.banner('MAX WIN REACHED', 0xf5c542, 1400); msgHold.current = false; break; } }
       board.current.clearWins(); await T(400);
       fx.current?.clear(); quiet.current = true; const buyX = buyTier ? t.buy : 0;
       setCine({ kind: 'out', tier: t, totalC: total, x: total / betC, cost: buyX, capped: total >= cap });
       await outroCount(total, betC, buyX); setMusicMode('end');
       if (cineTap.current) cineTap.current.textContent = R.current.auto ? 'CONTINUING' : 'TAP TO COLLECT';
-      await tapOrAuto(3000); fx.current?.clear(); setCine(null); quiet.current = false; setMusicMode('base');
+      await tapOrAuto(3000); credit(total - baseWin); fx.current?.clear(); setCine(null); quiet.current = false; setMusicMode('base');
       setBonus(null); setIntensity(1); board.current.clearRunners(); board.current.setSkin(false); board.current.show(round.spins[0]); setPose('idle'); setWays(243);
       setMsg(total > 0 ? { t: 'TOTAL WIN', k: 'win', amt: usd(total) } : { t: 'NO LUCK THIS TIME', k: 'calm' });
     } else if (total >= cap) setMsg({ t: 'MAX WIN REACHED', k: 'big', amt: usd(total) });
@@ -300,11 +298,7 @@ export default function App() {
       <main className="center">
         <div className="chips" onMouseLeave={() => setChipTip(null)}>
           <span className="chip" key={ways} onClick={() => setChipTip(t => t === 'ways' ? null : 'ways')} onMouseEnter={() => setChipTip('ways')}><b>{ways.toLocaleString()}</b>WAYS</span>
-          {bonus && <>
-            <span className="chip wilds" onClick={() => setChipTip(t => t === 'wilds' ? null : 'wilds')} onMouseEnter={() => setChipTip('wilds')}>WILDS{(bonus.runners.length ? bonus.runners : Array.from({ length: bonus.tier.runners }, () => ({ m: 1 }))).map((r, i) => <b key={i} className={r.m > 1 ? 'hot' : ''}>x{r.m}</b>)}</span>
-            <span className="chip gold" key={'m' + (bonus.meter ?? 1)} onClick={() => setChipTip(t => t === 'meter' ? null : 'meter')} onMouseEnter={() => setChipTip('meter')}><svg viewBox="0 0 40 26" className="chip-hat" aria-hidden="true"><rect x="9" y="1" width="22" height="18" rx="2.5" /><rect x="1" y="18.5" width="38" height="5.5" rx="2.75" /></svg><b>x{bonus.meter ?? 1}</b></span>
-            <span className="chip myst" onClick={() => setChipTip(t => t === 'myst' ? null : 'myst')} onMouseEnter={() => setChipTip('myst')}><img src={IMG(bonus.marked.sym)} alt="" /><b>x{bonus.marked.mult}</b></span></>}
-          {chipTip && <div className="chiptip" onClick={() => setChipTip(null)}>{{ ways: 'Ways to win on this spin. Open cells, Splits and Stacks add more.', wilds: 'Roaming Wilds and their multipliers. They double on split reels, up to x64.', meter: 'House Meter. Multiplies every free spin win. Each Key adds 1, up to x5.', myst: `Mystery Symbol. ${bonus ? NAMES[bonus.marked.sym] : ''} wins get this multiplier.` }[chipTip]}</div>}
+          {chipTip && <div className="chiptip" onClick={() => setChipTip(null)}>Ways to win on this spin. Open cells, Splits and Stacks add more.</div>}
         </div>
         <div className="board-wrap"><div className="board" ref={boardEl} onClick={() => board.current?.spinning && board.current.quickStop()} /></div>
         <div className={`msgbar ${msg.k ?? ''}`} key={msg.t + (msg.k ?? '')}>{msg.img !== undefined && <img src={IMG(msg.img)} alt="" />}<span>{msg.t}</span>{msg.amt && <em>{msg.amt}</em>}</div>
@@ -318,7 +312,7 @@ export default function App() {
           <button className="ic sm" title="Game rules and settings" aria-label="Game rules" onClick={() => { sfx.click(); setModal('info'); }}><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" /></svg></button>
           <div className="cell"><label>BALANCE</label><b>{usd(balance)}</b></div>
           <div className="cell"><label>BET</label><b>{usd(bet)}</b></div>
-          <div className="cell win"><label>WIN</label><b><span ref={el => { winRef.current = el; if (el && !el.textContent) el.textContent = usd(shown.current); }} />{xtag && <i className="xtag" key={xtag}>{xtag}</i>}</b></div>
+          <div className="cell win"><label>WIN</label><b><span ref={el => { winRef.current = el; if (el && !el.textContent) el.textContent = usd(shown.current); }} /></b></div>
           <button className={`ic sm ${sfxOnS || musicOn ? '' : 'off'}`} title="Sound on or off" aria-label="Sound" onClick={() => { const v = !(musicOn || sfxOnS); setMusic(v); setSfxS(v); }}><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" />{sfxOnS || musicOn ? <path d="M16 8a5 5 0 0 1 0 8" stroke="currentColor" strokeWidth="2" fill="none" /> : <path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" strokeWidth="2" />}</svg></button>
         </div>
         <div className="ctrls">
@@ -359,10 +353,10 @@ export default function App() {
       {cine.kind === 'in' ? <div className="c-wrap">
         <div className="c-file"><img src={ART('hubie_bonus')} /><div><small>FREE SPINS · {cine.tier.name}</small><h1>{cine.tier.name}</h1>
           <ul>{TIER_RULES[cine.tier.id - 1].map(r => <li key={r}>{r}</li>)}</ul>
-          {cine.marked && <div className="c-mark"><span>MYSTERY SYMBOL</span><img src={IMG(cine.marked.sym)} /><b>x{cine.marked.mult}</b><span>on {NAMES[cine.marked.sym]} wins</span></div>}</div></div>
+          {cine.marked && <div className="c-mark"><span>MYSTERY SYMBOL</span><img src={IMG(cine.marked.sym)} /><span>{NAMES[cine.marked.sym]} pays {MULT_WORD(cine.marked.mult)}</span></div>}</div></div>
         <div className="c-tap" ref={cineTap}>{R.current.auto ? 'STARTING' : 'TAP TO START'}</div></div>
         : (() => { const { good, ti, band } = endInfo(cine.x ?? 0, cine.cost); return <div className={`c-wrap out end b${cine.totalC ? band : 0}`}>
-          <div className="end-art"><img src={ART(END_ART[cine.tier.id - 1])} alt="Hubie" /><span className="end-line">{END_LINES[cine.tier.id - 1][[0, 1, 2, 2, 3][cine.totalC ? band : 0]]}</span></div>
+          <div className="end-art"><img src={ART(END_ART[cine.tier.id - 1])} alt="Hubie" /><span className="end-line">{END_LINES[cine.tier.id - 1][resultBand(cine.x ?? 0, cine.capped)]}</span></div>
           <small className="c-kicker">{cine.tier.name} COMPLETE{cine.capped ? ' · MAX WIN REACHED' : ''}</small>
           {cine.totalC ? <><div className="cine-tier">{good ? TIERS_WIN[ti].t : 'SHIFT OVER'}</div><div className="cine-total" ref={cineTotal}>{usd(0)}</div></>
             : <><div className="cine-tier calm">SHIFT OVER</div><div className="c-calm">NO WIN THIS TIME. THE HOUSE IS ALWAYS OPEN.</div></>}
