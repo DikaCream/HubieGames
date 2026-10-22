@@ -30,7 +30,7 @@ const hubieVisible = () => p.evaluate(() => { if (document.querySelector('.app.c
 async function settle(o = {}) { const t0 = Date.now(); let last = '', lastT = Date.now(); let hubMiss = 0, hubSeen = 0;
   while (Date.now() - t0 < 1800000) {
     const st = await p.evaluate(() => (document.querySelector('.msgbar')?.textContent || '') + '|' + (document.querySelector('.spins-left')?.textContent || '') + '|' + !!document.querySelector('.cine') + !!document.querySelector('.bigwin'));
-    if (st !== last) { last = st; lastT = Date.now(); } else if (Date.now() - lastT > 60000) { await p.screenshot({ path: '/tmp/stuck.png' }); throw new Error('stuck ' + st); }
+    if (st !== last) { last = st; lastT = Date.now(); } else if (Date.now() - lastT > 90000) { await p.screenshot({ path: '/tmp/stuck-' + tag + '.png' }); console.log('ERR so far', JSON.stringify(errs)); throw new Error('stuck ' + st); }
     if (o.win && await p.$('.msgbar.way')) { await W(500); await check('win'); await shot(o.win); o.win = null; }
     if (await p.$('.app.bonus') && !(await p.$('.cine')) && !(await p.$('.bigwin'))) { if (await hubieVisible()) hubSeen++; else { hubMiss++; if (hubMiss === 1) await p.screenshot({ path: OUT + 'hubie-missing-' + (o.tag || '') + '.png' }); }
       if (o.spin && await p.$('.msgbar.way')) { await W(400); await check('bonus ' + o.tag); await shot(o.spin); o.spin = null; } }

@@ -57,7 +57,7 @@ export class Board {
   fxL = new Container(); winL = new Container(); runL = new Container(); parts: Particle[] = []; dot!: Texture; shine!: Texture;
   bonus = false; quick = false; turbo = false; runners: { c: Container; b: Container; m: number }[] = [];
   onAntic: (on: boolean) => void = () => {}; onLand: (reel: number) => void = () => {};
-  private t = 0; private landResolve: (() => void) | null = null; private landed = 0; private ctx: Spin | null = null; private anticOK = false; private keys = 0;
+  private spinTok = 0; private t = 0; private landResolve: (() => void) | null = null; private landed = 0; private ctx: Spin | null = null; private anticOK = false; private keys = 0;
 
   async init(host: HTMLElement) {
     await this.app.init({ width: BW, height: BH, backgroundAlpha: 0, antialias: true, resolution: Math.min(devicePixelRatio || 1, 2), autoDensity: true, preference: 'webgl' });
@@ -136,7 +136,11 @@ export class Board {
     for (const ch of [...this.fxL.children]) { gsap.killTweensOf(ch); ch.destroy(); }
     this.reels.forEach((r, i) => { const col = sp.grid[i]; r.feed = [col[3]!.s, col[2]!.s, col[1]!.s, rndSym()]; r.stopAt = now + base + i * stag; r.antic = false;
       gsap.fromTo(r.strip, { y: 0 }, { y: -12, duration: .07, yoyo: true, repeat: 1 }); setTimeout(() => { r.state = 'spin'; r.speed = 900; }, 60); });
-    const t0 = performance.now();
+    const t0 = performance.now(); const tok = ++this.spinTok;
+    // Watchdog: if the render loop stalls (throttled tab, lost GPU frames), land the reels on the result anyway.
+    const dog = () => { if (tok !== this.spinTok || !this.landResolve) return; if (performance.now() - t0 < 9000) { setTimeout(dog, 1000); return; }
+      this.reels.forEach(r => { if (r.state === 'idle') return; const col = sp.grid[this.reels.indexOf(r)]; [col[1]!.s, col[2]!.s, col[3]!.s].forEach((v, k) => { r.slots[k + 1].s = v; }); r.feed = []; this.land(r); }); };
+    setTimeout(dog, 1000);
     return new Promise<void>(res => { this.landResolve = () => { const w = window as unknown as { __spinMs?: number[] }; (w.__spinMs ??= []).push(Math.round(performance.now() - t0)); res(); }; });
   }
   quickStop() { if (!this.landResolve) return; this.quick = true; const now = performance.now(); let k = 0; this.reels.forEach(r => { if (r.state === 'spin' && !r.antic && r.stopAt > now) r.stopAt = now + (k++) * 30; }); }

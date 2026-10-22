@@ -331,3 +331,5 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:4px;borde
 @media (max-height:700px){.end-art{max-height:38vh}.bw-hubie{height:28vh}}
 .end.b2 .cine-tier{color:#5ff2c0;text-shadow:0 0 18px rgba(95,242,192,.7)}
 .app.covered .fx{z-index:80}
+.bw-text,.c-wrap.out>.cine-total,.c-wrap.out>.cine-tier{position:relative;background:radial-gradient(closest-side,rgba(4,12,16,.75),transparent);padding:0 24px}
+@media (max-aspect-ratio:21/20){.side-l .bubble{left:auto;right:0;transform:none;white-space:normal;width:max-content;max-width:min(62vw,230px);text-align:center}}

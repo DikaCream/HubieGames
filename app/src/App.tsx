@@ -189,7 +189,7 @@ export default function App() {
       gsap.fromTo(title, { scale: 2.2, opacity: 0 }, { scale: 1, opacity: 1, duration: .45, ease: 'back.out(2.5)' });
       hub.src = ART(ti === 0 ? 'hubie_idle' : ti === 1 ? 'hubie_bigwin' : ti === 2 ? 'hubie_react' : 'hubie_bigwin'); gsap.fromTo(hub, { scale: .7, rotate: -8 }, { scale: 1, rotate: 0, duration: .5, ease: 'back.out(3)' });
       sfx.winTier(ti); setMusicMode('win' + ti);
-      if (f) { f.shower = [3, 5, 6, 8][ti]; f.burst([30, 70, 60, 90][ti], innerWidth / 2, innerHeight * .45, ti === 0 ? ['coin', 'spark'] : ti === 1 ? ['bill', 'coin'] : ti === 2 ? ['spark', 'coin', 'bill'] : ['spark', 'coin', 'bill'], 1 + ti * .25); }
+      if (f) { f.shower = [2, 3, 3, 4][ti]; f.burst([30, 50, 50, 60][ti], innerWidth / 2, innerHeight * .45, ti === 0 ? ['coin', 'spark'] : ti === 1 ? ['bill', 'coin'] : ti === 2 ? ['spark', 'coin', 'bill'] : ['spark', 'coin', 'bill'], 1 + ti * .25); }
       if (ti >= 1) { ov.classList.remove('shake'); void ov.offsetWidth; ov.classList.add('shake'); }
       if (ti === 3 && !fw) { const boom = () => { if (!f) return; f.burst(45, innerWidth * (.15 + Math.random() * .7), innerHeight * (.12 + Math.random() * .4), ['spark'], 1.1); sfx.firework(); }; boom(); fw = window.setInterval(boom, 650); } };
     // value segments: 0 > 25x > 50x > 150x > 500x > final, a few seconds per tier, shorter in turbo
@@ -205,7 +205,7 @@ export default function App() {
   /** Bonus total: monotonic count up, label taken from the final multiple. */
   async function outroCount(total: number, betC: number) {
     await wait(60); const el = document.querySelector('.cine-total') as HTMLElement; if (!el || total <= 0) return;
-    const ti = tierOf(total / betC); sfx.bigWin(); if (ti >= 0) { sfx.winTier(ti); setMusicMode('win' + ti); } const f = fx.current; if (f) { f.shower = 1 + Math.max(0, ti) * 2; f.burst(20 + Math.max(0, ti) * 25, innerWidth / 2, innerHeight * .45, ti >= 2 ? ['bill', 'coin', 'spark'] : ['bill', 'coin'], 1); }
+    const ti = tierOf(total / betC); sfx.bigWin(); if (ti >= 0) { sfx.winTier(ti); setMusicMode('win' + ti); } const f = fx.current; if (f) { f.shower = 1 + Math.max(0, ti); f.burst(20 + Math.max(0, ti) * 25, innerWidth / 2, innerHeight * .45, ti >= 2 ? ['bill', 'coin', 'spark'] : ['bill', 'coin'], 1); }
     let best = 0; const o = { v: 0 }; let skip = false; tapWait.current = () => { skip = true; };
     await new Promise<void>(res => { const tw = gsap.to(o, { v: total, duration: Math.min(6, 1.5 + Math.max(0, ti) * 1.2) * (R.current.turbo ? .4 : 1), ease: 'power1.out',
       onUpdate: () => { best = Math.max(best, Math.min(total, Math.round(o.v))); el.textContent = usd(best); if (Math.random() < .2) sfx.coin(); if (skip) tw.progress(1); }, onComplete: () => res() }); });
