@@ -1,29 +1,29 @@
 // HOUSE RULES: pure deterministic game math, shared by UI, simulator and the contract draft.
 // A round = 1 base spin (or a bought trigger spin) + all free spins it triggers. Spin k of a round
 // consumes 96 floats = HMAC blocks 12k..12k+11 of the same (serverSeed, clientSeed, nonce).
-export const REELS = 5, ROWS = 5, FLOATS_PER_SPIN = 96, BLOCKS_PER_SPIN = 12, MAX_WIN = 50_000, MAX_SPINS = 300, MULT_CAP = 256, MAX_RUNNERS = 5;
+export const REELS = 5, ROWS = 5, FLOATS_PER_SPIN = 96, BLOCKS_PER_SPIN = 12, MAX_WIN = 10_000, MAX_SPINS = 300, MULT_CAP = 64, MAX_RUNNERS = 5;
 export const S = { WILD: 0, KEY: 1, DWILD: 2, SPLIT: 3, EXPAND: 4, MYST: 5 } as const;
 export const SYM = ['wild', 'key', 'dwild', 'split', 'expand', 'mystery', 'h1', 'h2', 'h3', 'h4', 'l1', 'l2', 'l3', 'l4'] as const;
-export const NAMES = ['Wild', 'Key', 'Double Wild', 'Split', 'Stack', 'Mystery', 'The Croupier', 'Big Lou', 'Madame Jade', 'Ratchet', 'Chips', 'Dice', 'Cards', 'Cocktail'];
+export const NAMES = ['Hubie Wild', 'Key', 'Double Wild', 'Split', 'Stack', 'Mystery', 'House Token', 'Top Hat', 'Orange Tie', 'Coin Pin', 'Chips', 'Cufflinks', 'Pocket Watch', 'Pen'];
 export const PAYING = [6, 7, 8, 9, 10, 11, 12, 13];
 export const PREMIUM = [6, 7, 8, 9];
-const WEIGHTS = [4, 5, 6, 7, 10, 11, 12, 13]; const WSUM = WEIGHTS.reduce((a, b) => a + b, 0);
+const WEIGHTS = [4, 5, 6, 7, 15, 16, 17, 18]; const WSUM = WEIGHTS.reduce((a, b) => a + b, 0);
 /** Total bet = COINS coins; pays are coins per way for 3, 4, 5 reels. */
 export const COINS = 21.15;
 export const PAYS: Record<number, [number, number, number]> = {
   6: [18, 54, 180], 7: [14, 40, 125], 8: [11, 32, 90], 9: [9, 25, 68], 10: [4, 8, 20], 11: [3, 7, 17], 12: [3, 6, 14], 13: [2, 5, 11],
 };
-export const MYSTERY_MULTS = [2, 2, 3, 3, 4, 5, 5, 8, 10, 20];
+export const MYSTERY_MULTS = [2, 2, 2, 3, 3, 3, 4, 4, 5, 8];
 /** Vault cell reveal weights: premium, Boss Wild, Double Down, Stack Up. */
 export interface Mode { keyP: number; dwildP: number; splitP: number; cellW: [number, number, number, number]; pay?: number }
 /** Base game random features. */
-export const FEAT = { tipP: 0.022, raidP: 0.02, luckyP: 0.03, agentP: 0.05, meterCap: 5, lastCallBelow: 5, hubieRoundAdd: 1 };
-export const BASE: Mode = { keyP: 0.071, dwildP: 0.028, splitP: 0, cellW: [38, 20, 25, 17], pay: 0.943 };
+export const FEAT = { tipP: 0.06, raidP: 0.055, luckyP: 0.04, agentP: 0.04, meterCap: 5, lastCallBelow: 20, hubieRoundAdd: 1 };
+export const BASE: Mode = { keyP: 0.071, dwildP: 0.028, splitP: 0, cellW: [38, 20, 25, 17], pay: 0.734 };
 export interface Tier { id: 1 | 2 | 3; name: string; spins: number; runners: number; buy: number; mode: Mode }
 export const TIERS: Tier[] = [
-  { id: 1, name: 'AFTER HOURS', spins: 8, runners: 1, buy: 100, mode: { keyP: 0.03, dwildP: 0.025, splitP: 0.039, cellW: [38, 20, 25, 17], pay: 0.579 } },
-  { id: 2, name: 'MIDNIGHT RUN', spins: 10, runners: 2, buy: 400, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0275, cellW: [38, 20, 25, 17], pay: 0.652 } },
-  { id: 3, name: 'HOUSE TAKEOVER', spins: 10, runners: 3, buy: 2000, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0325, cellW: [38, 20, 25, 17], pay: 0.945 } },
+  { id: 1, name: 'AFTER HOURS', spins: 8, runners: 1, buy: 100, mode: { keyP: 0.03, dwildP: 0.025, splitP: 0.039, cellW: [38, 20, 25, 17], pay: 0.41 } },
+  { id: 2, name: 'MIDNIGHT RUN', spins: 10, runners: 2, buy: 400, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0275, cellW: [38, 20, 25, 17], pay: 1.038 } },
+  { id: 3, name: 'HOUSE TAKEOVER', spins: 10, runners: 3, buy: 2000, mode: { keyP: 0.03, dwildP: 0.02, splitP: 0.0325, cellW: [38, 20, 25, 17], pay: 2.15 } },
 ];
 export interface Cell { s: number; x?: number }
 export interface Reveal { reel: number; row: number; cell: Cell }
@@ -34,7 +34,7 @@ export interface Spin {
   keys: number; keyReels: number[]; free: boolean; spinsLeft: number; marked: { sym: number; mult: number } | null; addRunner: boolean; addSpins: number;
   /** Hubie's Tip: wilds thrown onto main cells before the win check (under = symbol that landed first). */
   tip: { r: number; row: number; under: number }[];
-  /** Owl Raid: rivals swap one symbol onto reels 1 to 3 for a sure win. */
+  /** House Swap: Hubie swaps one symbol onto reels 1 to 3 for a sure win. */
   raid: { sym: number; cells: { r: number; row: number; under: number }[] } | null;
   lucky: boolean; meter: number; meterAdd: number; pre: number; lastCall: boolean; agents: number; hubieRound: boolean;
 }

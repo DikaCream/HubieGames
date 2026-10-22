@@ -20,7 +20,7 @@ interface Reel { c: Container; strip: Container; slots: Slot[]; pos: number; spe
 type Particle = { s: Sprite; vx: number; vy: number; life: number; max: number; g: number };
 
 async function loadImg(url: string) { const i = new Image(); i.src = url; await i.decode().catch(() => {}); return i; }
-const FRAME: Record<number, string> = { 0: '#f5c542', 1: '#02F7FD', 2: '#f5c542', 3: '#02F7FD', 4: '#f5c542', 5: '#f5c542', 6: '#e0384e', 7: '#3f86ff', 8: '#1fd08f', 9: '#a865ff', 10: '#5aa7b5', 11: '#5aa7b5', 12: '#5aa7b5', 13: '#5aa7b5' };
+const FRAME: Record<number, string> = { 0: '#f5c542', 1: '#02F7FD', 2: '#f5c542', 3: '#02F7FD', 4: '#f5c542', 5: '#f5c542', 6: '#02F7FD', 7: '#ff8a3d', 8: '#e0384e', 9: '#f5c542', 10: '#3d8f9c', 11: '#3d8f9c', 12: '#3d8f9c', 13: '#3d8f9c' };
 /** One frame system for every symbol: dark rounded card, art inside, coloured rim. Full art cards are cropped to cover; cut out icons sit on a tinted glow. */
 function drawFramed(x: CanvasRenderingContext2D, img: HTMLImageElement, sym: number, card: boolean, X: number, Y: number, W: number) {
   const col = FRAME[sym] ?? '#5aa7b5', r = W * .14, inset = W * .04;
@@ -63,7 +63,7 @@ export class Board {
     await this.app.init({ width: BW, height: BH, backgroundAlpha: 0, antialias: true, resolution: Math.min(devicePixelRatio || 1, 2), autoDensity: true, preference: 'webgl' });
     const cv = this.app.canvas; cv.style.width = '100%'; cv.style.height = '100%'; cv.style.display = 'block'; host.appendChild(cv);
     const imgs = await Promise.all(SYM.map(n => loadImg(ART(n))));
-    const cards = new Set([S.WILD, S.DWILD, 6, 7, 8, 9]);
+    const cards = new Set([S.WILD, S.DWILD, 6, 7, 8, 9, 10, 11, 12, 13]);
     this.plain = imgs.map((im, i) => tex(im, 'plain', i, cards.has(i as 0))); this.blur = imgs.map((im, i) => tex(im, 'blur', i, cards.has(i as 0)));
     this.splitT = imgs.map((im, i) => tex(im, 'split', i, cards.has(i as 0)));
     this.T.locked = tex(await loadImg(ART('locked')), 'plain'); this.T.runner = tex(await loadImg(ART('runner')), 'plain', S.WILD, true);
@@ -277,7 +277,7 @@ export class Board {
       w.destroy(); const spr = this.reels[t.r].cells[t.row - 1]; spr.texture = this.plain[S.WILD]; spr.width = spr.height = C; this.shake(5); this.ring(p.x, p.y, 0xf5c542); this.burst(p.x, p.y, 22, 0xf5c542, 1.3); sfx.slam(); }
     await wait(this.turbo ? 100 : 250);
   }
-  /** Flip cells to a new symbol (Owl Raid in violet, Last Call wilds in gold). */
+  /** Flip cells to a new symbol (House Swap in violet, Last Call wilds in gold). */
   async flipCells(list: { r: number; row: number }[], sym: number, color: number) {
     await Promise.all(list.map(async (t, i) => { await wait(i * (this.turbo ? 60 : 140)); const spr = this.reels[t.r].cells[t.row - 1]; const p = this.pos(t.r, t.row); const sx = spr.scale.x;
       sfx.whoosh(); this.burst(p.x, p.y, 16, color, 1); await gsap.to(spr.scale, { x: 0, duration: .14, ease: 'power2.in' }); spr.texture = this.plain[sym]; spr.width = spr.height = C; const nx = spr.scale.x; spr.scale.x = 0;
