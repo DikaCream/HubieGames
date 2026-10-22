@@ -1,7 +1,7 @@
 // v12 playtest: node v12.mjs <w> <h> <tag> [spins] [buys]
 import { chromium } from 'playwright';
-const [w, h, tag] = [+process.argv[2], +process.argv[3], process.argv[4]]; const NSP = +(process.argv[5] ?? 30); const NB = +(process.argv[6] ?? 3);
-const mobile = w < 600; const OUT = `/workspace/housebets-slot/v12-${tag}-`;
+const [w, h, tag] = [+process.argv[2], +process.argv[3], process.argv[4]]; const NSP = +(process.argv[5] ?? 30); const BUYS = (process.argv[6] ?? '123').split('').filter(x => x !== '0').map(Number); const M7 = process.argv[7] ?? 'all'; const TIERS = M7 !== 'notiers';
+const mobile = w < 600; const OUT = `/workspace/housebets-slot/v12-${tag}-`; if (NSP === 0) {}
 const W = ms => new Promise(r => setTimeout(r, ms));
 const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
 const p = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: mobile ? 2 : 1, isMobile: mobile, hasTouch: mobile });
@@ -47,21 +47,22 @@ let wins = 0;
 for (let i = 0; i < NSP; i++) { await click('.spin'); await W(200); const o = { win: wins < 1 ? 'win' : null }; await settle(o); if (!o.win) wins++; }
 log.push(`normal spins ${NSP}, balance ${await p.textContent('.strip .cell b')}`);
 await check('after spins');
-for (const t of [1, 2, 3].slice(0, NB)) {
-  await click('.buy2'); await W(500); if (t === 1) { await check('buy'); await shot('buy-menu'); }
+for (const t of BUYS) {
+  await click('.buy2'); await W(500); if (t === BUYS[0]) { await check('buy'); await shot('buy-menu'); }
   const dis = await p.$eval(`.ticket.t${t}`, e => e.disabled); if (dis) { log.push('ticket ' + t + ' disabled'); await click('.modal .x'); continue; }
   await click(`.ticket.t${t}`); await W(300); if (await p.$('.confirm .cta')) await click('.confirm .cta'); await W(300);
   await click('.spin'); await settle({ tag: 'bonus' + t, intro: `bonus${t}-intro`, spin: `bonus${t}-spin`, end: `bonus${t}-end` }); await W(500); await check('after bonus ' + t);
 }
 // forced big win tiers and end screens (debug hook only exists with ?force)
-await enter('?force=tier');
+if (TIERS) { await enter('?force=tier');
 const demo = k => p.evaluate(k => window.__hrDemo(k), k);
-for (const [k, n] of [['big0', 1], ['big1', 2], ['big2', 3], ['big3', 4]]) {
+for (const [k, n] of (M7 === 'ends' ? [] : [['big0', 1], ['big1', 2], ['big2', 3], ['big3', 4]])) {
   const run = demo(k); const seen = new Set();
   for (let i = 0; i < 200; i++) { const t = await p.evaluate(() => { const b = document.querySelector('.bigwin'); return b ? b.dataset.t + '|' + document.querySelector('.bw-title').textContent : null; });
     if (t) { const [ti, name] = t.split('|'); if (!seen.has(ti)) { seen.add(ti); await W(1300); await check('tier ' + ti); await shot(`tier${ti}` + (n - 1 > +ti ? `-in-${k}` : '')); log.push(`${k}: reached ${name}`); } if (seen.size === n) break; }
     await W(100); }
   for (let i = 0; i < 40 && await p.$('.bigwin'); i++) { await W(1500); await p.evaluate(() => document.querySelector('.bigwin')?.click()); } await run;
 }
-for (const [ti, band] of [[0, 0], [0, 2], [1, 1], [1, 3], [2, 2], [2, 4]]) { const run = demo(`end${ti}${band}`); await W(5200); await check(`end demo ${ti}${band}`); await shot(`end-${['afterhours', 'midnight', 'takeover'][ti]}-band${band}`); await p.evaluate(() => document.querySelector('.cine')?.click()); await run; }
+for (const [ti, band] of (M7 === 'tiers' ? [] : [[0, 0], [1, 3], [2, 4]])) { const run = demo(`end${ti}${band}`); await W(5200); await check(`end demo ${ti}${band}`); await shot(`end-${['afterhours', 'midnight', 'takeover'][ti]}-band${band}`); await p.evaluate(() => document.querySelector('.cine')?.click()); await run; }
+}
 console.log(tag, w + 'x' + h, '\n' + log.join('\n'), '\nERR', JSON.stringify(errs), '\nBAD', bad.length ? '\n' + [...new Set(bad)].join('\n') : 'none'); await b.close();

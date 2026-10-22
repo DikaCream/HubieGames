@@ -333,3 +333,4 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:4px;borde
 .app.covered .fx{z-index:80}
 .bw-text,.c-wrap.out>.cine-total,.c-wrap.out>.cine-tier{position:relative;background:radial-gradient(closest-side,rgba(4,12,16,.75),transparent);padding:0 24px}
 @media (max-aspect-ratio:21/20){.side-l .bubble{left:auto;right:0;transform:none;white-space:normal;width:max-content;max-width:min(62vw,230px);text-align:center}}
+.c-wrap.out>.cine-tier{font-size:clamp(26px,9vw,52px);white-space:nowrap}

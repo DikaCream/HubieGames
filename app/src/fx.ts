@@ -18,7 +18,7 @@ export class FX {
   loop = () => {
     const { ctx, w, h, d } = this; ctx.clearRect(0, 0, w, h);
     if (this.ambient && Math.random() < .25) this.add({ x: Math.random() * w, y: h + 10, vx: (Math.random() - .5) * .4, vy: -(.4 + Math.random() * 1.1) * d, max: 500, kind: this.heat ? 'ember' : 'dust', r: (1 + Math.random() * 2) * d, g: 0 });
-    for (let i = 0; i < this.shower; i++) if (Math.random() < .45) this.add({ x: Math.random() * w, y: -20 - Math.random() * 60, vx: (Math.random() - .5) * 2, vy: (5 + Math.random() * 6) * d, max: 220, kind: Math.random() < .8 ? 'coin' : 'bill', r: (8 + Math.random() * 9) * d, g: .12 * d });
+    for (let i = 0; i < this.shower; i++) if (Math.random() < .25) this.add({ x: Math.random() * w, y: -20 - Math.random() * 60, vx: (Math.random() - .5) * 2, vy: (5 + Math.random() * 6) * d, max: 220, kind: Math.random() < .8 ? 'coin' : 'bill', r: (5 + Math.random() * 6) * d, g: .12 * d });
     this.ps = this.ps.filter(p => p.life++ < p.max && p.y < h + 60 && p.y > -200);
     for (const p of this.ps) {
       p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr; if (p.kind === 'bill') { p.vx = Math.sin(p.life / 12) * 2 * d; }
