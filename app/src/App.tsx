@@ -277,7 +277,7 @@ export default function App() {
       if (kind === 'tip') await present(demoCache.tip ??= findSpin(s => s.tip.length >= 2, false), false);
       if (kind === 'raid') await present(demoCache.raid ??= findSpin(s => !!s.raid, false), false);
       if (kind === 'lucky') await present(demoCache.lucky ??= findSpin(s => s.lucky, false), false);
-      if (kind.startsWith('f')) { const pred: Record<string, (s: Spin) => boolean> = { fmeter: s => s.meterAdd > 0 && s.win > 0 && s.meter > 1, fagent: s => s.agents > 0, flast: s => s.lastCall, fround: s => s.hubieRound, fretrig: s => s.addSpins > 0, fmult: s => s.runners.some(r => r.doubled) && s.win > 0 };
+      if (kind.startsWith('f') && !kind.startsWith('fbig')) { const pred: Record<string, (s: Spin) => boolean> = { fmeter: s => s.meterAdd > 0 && s.win > 0 && s.meter > 1, fagent: s => s.agents > 0, flast: s => s.lastCall, fround: s => s.hubieRound, fretrig: s => s.addSpins > 0, fmult: s => s.runners.some(r => r.doubled) && s.win > 0 };
         let rd: Round | null = null, idx = 0; for (let i = 0; i < 20000 && !rd; i++) { const r = playRound(() => Array.from({ length: 96 }, Math.random), 1 + (i % 3)); const j = r.spins.findIndex(x => x.free && pred[kind](x)); if (j > 0) { rd = r; idx = j; } }
         if (rd) { const prev = rd.spins[idx - 1]; setBonus({ tier: rd.tier!, played: idx - 1, total: idx + rd.spins[idx].spinsLeft, marked: rd.marked!, runners: prev.runners, meter: prev.meter || 1 }); setPose('bonus'); board.current.setSkin(true); setMusicMode('bonus');
           if (prev.runners.length) await board.current.moveRunners(prev.runners, true); await present(rd.spins[idx], false); await T(800);
