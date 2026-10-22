@@ -117,7 +117,7 @@ export class Board {
     this.ctx!.grid[i].slice(1, 4).forEach((c, k) => { if (c!.s === S.KEY) { this.keys++; this.slam(i, k + 1, 0x02f7fd); sfx.scatter(this.keys); } else if (c!.s === S.DWILD) this.slam(i, k + 1, 0xf5c542, .7); });
     this.landed++; this.onLand(i);
     if (this.anticOK && this.keys >= 2 && i < 4 && this.reels[i + 1].state !== 'idle' && !this.reels[i + 1].antic) this.startAntic(i + 1);
-    if (this.landed === 5) { this.reels.forEach(x => gsap.to(x.dark, { alpha: 0, duration: .25 })); this.onAntic(false); const f = this.landResolve; this.landResolve = null; setTimeout(() => f?.(), this.turbo ? 50 : 120); }
+    if (this.landed === 5) { this.reels.forEach(x => gsap.to(x.dark, { alpha: 0, duration: .25 })); this.onAntic(false); const f = this.landResolve; this.landResolve = null; setTimeout(() => f?.(), this.turbo ? 40 : 70); }
   }
   private startAntic(j: number) {
     const now = performance.now(), d = this.quick ? 450 : this.turbo ? 650 : 1050;
@@ -130,7 +130,7 @@ export class Board {
   private resetVaults() { for (const r of this.reels) for (const v of r.vault) { v.open = false; v.content.visible = false; v.badge?.destroy(); v.badge = null; gsap.killTweensOf(v.lock); v.lock.alpha = 1; v.lock.y = ry(r.vault.indexOf(v) ? 4 : 0); } }
   spin(sp: Spin, opts: { turbo: boolean; antic: boolean }) {
     this.clearWins(); this.clearParticles(); this.resetVaults(); this.turbo = opts.turbo; this.quick = false; this.ctx = sp; this.anticOK = opts.antic; this.keys = 0; this.landed = 0;
-    const now = performance.now(), base = opts.turbo ? 90 : 760, stag = opts.turbo ? 0 : 290;
+    const now = performance.now(), base = opts.turbo ? 90 : 520, stag = opts.turbo ? 0 : 220;
     // Hard reset of every reel sprite so nothing keeps a stale texture, scale or offset (fixes reel 1 ghost on mobile).
     this.reels.forEach(r => { r.strip.x = 0; r.c.x = rx(this.reels.indexOf(r)); r.slots.forEach(sl => { gsap.killTweensOf(sl.spr); gsap.killTweensOf(sl.spr.scale); sl.spr.alpha = 1; sl.spr.rotation = 0; sl.spr.x = C / 2; this.setSlot(sl, sl.s, 'plain'); }); });
     for (const ch of [...this.fxL.children]) { gsap.killTweensOf(ch); ch.destroy(); }
@@ -143,7 +143,9 @@ export class Board {
     setTimeout(dog, 1000);
     return new Promise<void>(res => { this.landResolve = () => { const w = window as unknown as { __spinMs?: number[] }; (w.__spinMs ??= []).push(Math.round(performance.now() - t0)); res(); }; });
   }
-  quickStop() { if (!this.landResolve) return; this.quick = true; const now = performance.now(); let k = 0; this.reels.forEach(r => { if (r.state === 'spin' && !r.antic && r.stopAt > now) r.stopAt = now + (k++) * 30; }); }
+  /** Slam the reels to a stop, keeping left to right order: reels after an anticipation reel wait for it. */
+  quickStop() { if (!this.landResolve) return; this.quick = true; const now = performance.now(); let k = 0; let gate = 0;
+    this.reels.forEach(r => { if (r.antic) { gate = Math.max(gate, r.stopAt); return; } if (r.state === 'spin' && r.stopAt > now) r.stopAt = Math.max(gate + 30 * k, now + (k++) * 30); }); }
   get spinning() { return !!this.landResolve; }
   /** Instantly show a grid (used to restore the board after a bonus). */
   show(sp: Spin) { this.clearWins(); this.resetVaults(); this.ctx = sp; this.reels.forEach((r, i) => { [1, 2, 3].forEach(row => this.setSlot(r.slots[row], sp.grid[i][row]!.s, 'plain')); r.cells = [r.slots[1].spr, r.slots[2].spr, r.slots[3].spr]; }); }

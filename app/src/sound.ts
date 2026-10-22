@@ -108,7 +108,7 @@ export function setMusicOn(on: boolean) { musicOn = on; if (ctx) music.gain.setT
 export function setSfxOn(on: boolean) { sfxOn = on; if (ctx) sfxBus.gain.setTargetAtTime(on ? 0.85 : 0, ctx.currentTime, 0.05); }
 /** base, bonus, win0 to win3 (big win tiers), end (bonus summary, plays once then returns to base). */
 export function setMusicMode(m: string) { if (m === mode || !TRACKS[m]) return; mode = m; step = 0; loopBar = 0;
-  if (ctx) { const t = ctx.currentTime; music.gain.cancelScheduledValues(t); music.gain.setValueAtTime(musicOn ? .12 : 0, t); music.gain.linearRampToValueAtTime(musicOn ? .34 : 0, t + .5); nextT = Math.max(nextT, t + .05); }
+  if (ctx) { const t = ctx.currentTime; music.gain.cancelScheduledValues(t); music.gain.setValueAtTime(music.gain.value, t); music.gain.linearRampToValueAtTime(0, t + .06); music.gain.setValueAtTime(0, t + .28); music.gain.linearRampToValueAtTime(musicOn ? .34 : 0, t + .8); nextT = Math.max(nextT, t + .3); }
   melody = phrase(m === 'bonus' ? FREE_CH : BASE_CH, 8, m === 'bonus' ? .45 : .3);
   setIntensity(m === 'base' ? 1 : m === 'bonus' ? 1 : m.startsWith('win') ? 3 : 1); }
 export const musicMode = () => mode;
