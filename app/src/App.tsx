@@ -358,7 +358,7 @@ export default function App() {
           {cine.marked && <div className="c-mark"><span>MYSTERY SYMBOL</span><img src={IMG(cine.marked.sym)} /><span>{NAMES[cine.marked.sym]} pays {MULT_WORD(cine.marked.mult)}</span></div>}</div></div>
         <div className="c-tap" ref={cineTap}>{R.current.auto ? 'STARTING' : 'TAP TO START'}</div></div>
         : (() => { const { good, ti, band } = endInfo(cine.x ?? 0, cine.cost); return <div className={`c-wrap out end b${cine.totalC ? band : 0}`}>
-          <div className="end-art"><img src={ART(END_ART[cine.tier.id - 1])} alt="Hubie" /><span className="end-line">{END_LINES[cine.tier.id - 1][resultBand(cine.x ?? 0, cine.capped)]}</span></div>
+          <div className="end-art"><img src={ART(END_ART[cine.tier.id - 1])} alt="Hubie" /><span className="end-line">{END_LINES[cine.tier.id - 1][cine.capped || endInfo(cine.x ?? 0, cine.cost ?? 0).good ? resultBand(cine.x ?? 0, cine.capped) : 0]}</span></div>
           <small className="c-kicker">{cine.tier.name} COMPLETE{cine.capped ? ' · MAX WIN REACHED' : ''}</small>
           {cine.totalC ? <><div className="cine-tier">{good ? TIERS_WIN[ti].t : 'SHIFT OVER'}</div><div className="cine-total" ref={cineTotal}>{usd(0)}</div></>
             : <><div className="cine-tier calm">SHIFT OVER</div><div className="c-calm">NO WIN THIS TIME. THE HOUSE IS ALWAYS OPEN.</div></>}
