@@ -3,12 +3,12 @@
 A provably fair video slot prototype for the Housebets House Games embed. Hubie the sloth owns the city at night, and everything on the reels is his: the House Token, his top hat, his orange tie, his coin pin, his chips, cufflinks, pocket watch and pen. Hubie himself is the Wild.
 
 ## Mechanics
-* 5 reels by 3 rows, 243 base ways, up to 2,087,008 with open cells, plus a locked cell above and below every reel.
+* 5 reels by 3 rows, 243 base ways, up to 1,565,109 with open cells, plus a locked cell above and below every reel.
 * Symbols, top to bottom: House Token, Top Hat, Orange Tie, Coin Pin, then Chips, Cufflinks, Pocket Watch, Pen. Hubie Wild, Double Wild, Key, Split and Stack keep their roles.
 * Key: 1 or 2 Keys open both locked cells on their reels. A cell reveals a top symbol, a Wild, a Split (every symbol on that reel counts twice) or a Stack (one symbol that counts as 4).
 * Double Wild lands on reels 2, 3 and 4, counts as 2 wilds and makes its reel a split reel.
 * 3, 4 or 5 Keys start AFTER HOURS (8 spins, 1 Roaming Wild), MIDNIGHT RUN (10 spins, 2 Roaming Wilds) or HOUSE TAKEOVER (10 spins, 3 Roaming Wilds).
-* Roaming Wilds move every spin. On a split reel a Roaming Wild doubles its multiplier and keeps it, up to x64.
+* Roaming Wilds move every spin. On a split reel a Roaming Wild doubles its multiplier and keeps it.
 * Mystery Symbol: when free spins start the Keys flip to show one symbol with a multiplier (x2 to x8) for the whole feature.
 * In free spins each Key adds a spin; 2 or more Keys add a Roaming Wild and 1 more spin.
 * Hubie's Tip, House Swap and Lucky Cell in the base game; House Meter (up to x5), Double Agent, Hubie's Round and Last Call in free spins. Last Call now fires when the feature has paid under 20x before the final spin, so far fewer features end with almost nothing.
