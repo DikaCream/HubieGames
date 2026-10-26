@@ -10,7 +10,7 @@ import { post, listen } from './host';
 
 const IMG = (s: number) => ART(SYM[s]);
 const BETS = [10, 20, 30, 40, 50, 60, 80, 100, 120, 150, 200, 300, 400, 500, 1000, 2000]; // cents
-export const MAX_WAYS = 2087008; // reels 1 and 5: 14, reels 2 to 4: 22 (split reel with two Stack cells)
+export const MAX_WAYS = 1565109; // reels 1 and 5: 13 (Key 1, two doubled symbols 4, top Split 0, bottom Stack 8), reels 2 to 4: 21 (Key 1, Double Wild 2, doubled symbol 2, two Stacks 16)
 const usd = (c: number) => '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const TIERS_WIN = [{ x: 25, t: 'HIGH ROLLER' }, { x: 50, t: 'HOUSE MONEY' }, { x: 150, t: "HUBIE'S HEIST" }, { x: 500, t: 'OWN THE HOUSE' }];
 /** Bonus end screens: art and Hubie's line per feature, by win band (under 25x, 25x, 150x, 500x). */
@@ -28,12 +28,12 @@ const TIER_RULES = [
   ['10 free spins', '2 Roaming Wilds', 'Each Key adds a free spin'],
   ['10 free spins', '3 Roaming Wilds', 'Each Key adds a free spin'],
 ];
-const MULT_WORD = (m: number) => m === 2 ? 'double' : m === 3 ? 'triple' : `${['', '', '', '', 'four', 'five', 'six', 'seven', 'eight'][m] || m} times`;
-const BUY_NOTE = ['The cheapest way in, with 1 Roaming Wild.', 'Two Roaming Wilds for bigger multipliers.', 'Three Roaming Wilds for the biggest wins.'];
+const MULT_WORD = (m: number) => m === 2 ? 'double' : m === 3 ? 'triple' : `${m} times as much`;
+const BUY_NOTE = ['Lowest price, a shorter shift.', 'Two Wilds working the floor.', 'Three Wilds for the biggest nights.'];
 const SLIDES = [
   { art: 'end_ht', t: 'WELCOME TO THE HOUSE', d: `Match symbols on neighbouring reels from the left. Win up to ${MAX_WIN.toLocaleString()} times your bet.` },
-  { icons: ['locked', 'key', 'wild'], t: 'KEYS OPEN CELLS', d: 'Each reel has a locked cell above and below. 1 or 2 Keys open them for a bonus symbol.' },
-  { icons: ['key', 'runner'], t: 'FREE SPINS', d: '3, 4 or 5 Keys start free spins with Roaming Wilds that grow on split reels.' },
+  { icons: ['locked', 'key', 'wild'], t: 'KEYS OPEN CELLS', d: 'Each reel has a locked cell above and below. 1 or 2 Keys open them to show a top symbol, a Wild, a Split or a Stack.' },
+  { icons: ['key', 'runner'], t: 'FREE SPINS', d: '3, 4 or 5 Keys start free spins. Roaming Wilds move every spin and get stronger on split reels.' },
 ];
 const SHOWCASE = typeof location !== 'undefined' && location.search.includes('showcase');
 const demoCache: Record<string, Spin> = {};
@@ -69,7 +69,7 @@ export default function App() {
   const [autoCfg, setAutoCfg] = useState<Auto>({ left: 25, stopWin: 0, loss: 0, gain: 0, start: 0 });
   const [bonus, setBonus] = useState<{ tier: Tier; played: number; total: number; marked: { sym: number; mult: number }; runners: Runner[]; added?: number; meter?: number } | null>(null);
   const [cine, setCine] = useState<null | { kind: 'in' | 'out'; tier: Tier; marked?: { sym: number; mult: number }; totalC?: number; x?: number; cost?: number; capped?: boolean }>(null);
-  const [chipTip, setChipTip] = useState<string | null>(null);
+  const [chipTip, setChipTip] = useState<string | null>(null); const [payTip, setPayTip] = useState<number | null>(null);
   const [big, setBig] = useState<null | { x: number; c: number }>(null);
   const [tab, setTab] = useState(0);
   const [serverSeed, setServerSeed] = useState(randomServerSeed); const [nextSeed, setNextSeed] = useState(randomServerSeed);
@@ -348,7 +348,7 @@ export default function App() {
       <div className="sl-nav"><button className="ic" aria-label="Previous" disabled={slide === 0} onClick={() => setSlide(s => s - 1)}><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.6" fill="none" /></svg></button>
         <div className="dots">{SLIDES.map((_, i) => <i key={i} className={i === slide ? 'on' : ''} onClick={() => setSlide(i)} />)}</div>
         <button className="ic" aria-label="Next" disabled={slide === SLIDES.length - 1} onClick={() => setSlide(s => s + 1)}><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.6" fill="none" /></svg></button></div>
-      <button className="cta" onClick={() => { startAmbient(); sfx.click(); setScreen('game'); }}>{slide < SLIDES.length - 1 ? 'PLAY NOW' : 'PLAY'}</button></div>}
+      <button className="cta" onClick={() => { startAmbient(); sfx.click(); setScreen('game'); }}>PLAY</button></div>}
 
     {cine && <div className={`cine ${cine.kind} t${cine.tier.id}`} onClick={() => tapWait.current?.()}>
       <div className="c-bg" style={{ backgroundImage: `url(${ART('bonus_bg')})` }} /><div className="c-rays" /><div className="c-vig" />
@@ -390,28 +390,28 @@ export default function App() {
         <button className="cta wide" onClick={() => { sfx.click(); setAuto({ ...autoCfg, start: balance }); setModal(null); }}>START {autoCfg.left} ROUNDS · {usd(autoCfg.left * bet)}</button></div>}
       {modal === 'info' && <><div className="settings"><span>SETTINGS</span><button className={`pill ${turbo ? 'on' : ''}`} onClick={() => setTurbo(t => !t)}>TURBO {turbo ? 'ON' : 'OFF'}</button><button className={`pill ${musicOn ? 'on' : ''}`} onClick={() => setMusic(m => !m)}>MUSIC {musicOn ? 'ON' : 'OFF'}</button><button className={`pill ${sfxOnS ? 'on' : ''}`} onClick={() => setSfxS(m => !m)}>SOUND {sfxOnS ? 'ON' : 'OFF'}</button></div><div className="tabs">{['Features', 'Examples', 'Paytable', 'Rules'].map((t, i) => <button key={t} className={tab === i ? 'on' : ''} onClick={() => setTab(i)}>{t}</button>)}</div>
         {tab === 0 && <div className="blocks">
-          {[['locked', 'Locked Cells', 'A locked cell sits above and below each reel. 1 or 2 Keys open the cells on their reels. In free spins every Key opens them.'],
+          {[['locked', 'Locked Cells', 'A locked cell sits above and below each reel. 1 or 2 Keys open the cells on their reels. In free spins every Key opens them, and a Split can also break open a top cell by itself.'],
             ['h1', 'Top Symbol', 'A House Token, Top Hat, Orange Tie or Coin Pin in an open cell adds one more symbol to its reel.'],
             ['wild', 'Hubie Wild', 'Stands in for every paying symbol.'],
             ['split', 'Split', 'Paying symbols on this reel count twice. Wilds still count once.'],
             ['expand', 'Stack', 'One paying symbol that counts as 4, or as 8 on a split reel.'],
             ['dwild', 'Double Wild', 'Lands on reels 2, 3 and 4. Counts as 2 Wilds and makes its reel a split reel.'],
-            ['runner', 'Roaming Wild', `Free spins only. Moves every spin. On a split reel its multiplier doubles and stays, up to x${MULT_CAP}. Up to 5 at once.`],
-            ['mystery', 'Mystery Symbol', 'When free spins start, the Keys reveal one symbol and a multiplier. Its wins get that multiplier until the feature ends.'],
-            ['hubie_react', "Hubie's Tip", 'Base game. Hubie throws 1 to 3 Wilds onto the reels.'],
-            ['hubie_react', 'House Swap', 'Base game without Keys. Hubie turns one cell on reels 1, 2 and 3 into the same symbol, so the spin wins.'],
+            ['runner', 'Roaming Wild', 'Free spins only. Moves to a new spot every spin. On a split reel its multiplier doubles and stays. Up to 5 at once.'],
+            ['mystery', 'Mystery Symbol', 'When free spins start, the Keys reveal one symbol. That symbol pays more until the feature ends.'],
+            ['hubie_react', "Hubie's Tip", 'Base game. Hubie throws 1 to 3 Wilds onto the reels. Never on a bonus buy.'],
+            ['hubie_react', 'House Swap', 'Base game without Keys, never together with a Tip. Hubie turns one cell on reels 1, 2 and 3 into the same symbol, so the spin wins.'],
             ['locked', 'Lucky Cell', 'Base game without Keys. One locked cell opens for free.'],
-            ['hubie_bonus', 'House Meter', `Free spins. Starts at x1 and multiplies every win. Each Key adds 1 and Hubie's Round adds 1 halfway, up to x${FEAT.meterCap}.`],
-            ['runner', 'Double Agent', 'Free spins. A Roaming Wild that doubles can split in two. The new one joins next spin at x1.'],
-            ['wild', 'Last Call', `Free spins. If the feature has paid less than ${FEAT.lastCallBelow} times your bet when the last spin starts, reels 2 and 3 turn Wild.`],
+            ['hubie_bonus', 'House Meter', "Free spins. Multiplies every win. Each Key raises it, and Hubie's Round raises it once more on free spin 4 (AFTER HOURS) or 5 (MIDNIGHT RUN, HOUSE TAKEOVER). It stops growing at its top level."],
+            ['runner', 'Double Agent', 'Free spins. A Roaming Wild that doubles can split in two. The new one joins next spin at the starting multiplier.'],
+            ['wild', 'Last Call', `Free spins. If the free spins have paid less than ${FEAT.lastCallBelow} times your bet when the scheduled last spin starts, reels 2 and 3 turn Wild.`],
             ['key', 'Free Spins', `3, 4 or 5 Keys start ${TIERS.map(t => `${t.name} (${t.spins} spins, ${t.runners} Roaming Wild${t.runners > 1 ? 's' : ''})`).join(', ')}. Each Key adds 1 spin. 2 or more Keys in one spin add 1 more spin and a Roaming Wild.`],
           ].map(([i, t, d]) => <div className="blk" key={t}><img src={ART(i)} /><div><b>{t}</b><span>{d}</span></div></div>)}</div>}
         {tab === 1 && <div className="ex"><Example win /><Example />
-          <div className="exs">{[[S.WILD, 'WILD', 'Stands in for the House Token, so reels 1 to 3 still win.'], [S.SPLIT, 'SPLIT', 'Every paying symbol on that reel counts twice.'], [S.EXPAND, 'STACK', 'One cell that counts as 4 of its symbol.']].map(([sym, t, d]) =>
+          <div className="exs">{[[S.WILD, 'WILD', 'Stands in for the House Token, so reels 1 to 3 still win.'], [S.SPLIT, 'SPLIT', 'Paying symbols on that reel count twice. Wilds still count once.'], [S.EXPAND, 'STACK', 'One cell that counts as 4 of its symbol, or 8 on a split reel.']].map(([sym, t, d]) =>
             <div className="exc" key={t}><div className="mini sm">{[6, sym as number, 6].map((v, k) => <div key={k}><img className="hit" src={IMG(v as number)} /></div>)}</div><b>{t}</b><span>{d}</span></div>)}</div></div>}
-        {tab === 2 && <><p className="mut">Base game pays for 3, 4 and 5 reels at a {usd(bet)} bet, per way. Free spins pay at their own rates.</p>
-          <div className="pay-grid">{PAYING.map(s => <div key={s} className="pay"><img src={IMG(s)} /><b>{NAMES[s]}</b>
-            <div className="pays">{PAYS[s].map((p, i) => <span key={i}><i>{i + 3}</i><em>{usd(Math.round(p * (BASE.pay ?? 1) / COINS * bet))}</em></span>).reverse()}</div></div>)}</div></>}
+        {tab === 2 && <><p className="mut">Base game pays per way for 3, 4 and 5 reels at a {usd(bet)} bet. Values are rounded to the cent. Free spin pays are lower in AFTER HOURS and higher in MIDNIGHT RUN and HOUSE TAKEOVER. Tap a symbol for details.</p>
+          <div className="pay-grid">{PAYING.map(s => <button key={s} className={`pay ${payTip === s ? 'on' : ''}`} onClick={() => setPayTip(t => t === s ? null : s)}><img src={IMG(s)} /><b>{NAMES[s]}</b>
+            <div className="pays">{PAYS[s].map((p, i) => <span key={i}><i>{i + 3}</i><em>{usd(Math.round(p * (BASE.pay ?? 1) / COINS * bet))}</em></span>).reverse()}</div>{payTip === s && <small className="pay-note">{s <= 9 ? 'Top symbol. Can also appear in an open locked cell.' : 'Common symbol. Can appear as a Stack.'}</small>}</button>)}</div></>}
         {tab === 3 && <ul className="rules">
           <li>5 reels and 3 rows, plus a locked cell above and below each reel.</li>
           <li>Every spin starts with 243 ways. Open cells, Splits and Stacks add more, up to {MAX_WAYS.toLocaleString()}.</li>
@@ -419,20 +419,21 @@ export default function App() {
           <li>RTP {RTP.base}. Bonus buy RTP: AFTER HOURS {RTP.buys[0]}, MIDNIGHT RUN {RTP.buys[1]}, HOUSE TAKEOVER {RTP.buys[2]}.</li>
           <li>Max win is {MAX_WIN.toLocaleString()} times your bet, and the round ends there. Odds from a normal spin: {RTP.maxOdds} (simulated).</li>
           <li>Volatility: medium high.</li>
+          <li>Bet from {usd(BETS[0])} to {usd(BETS[BETS.length - 1])}.</li>
           <li>Autoplay stops at the limits you set or when you press STOP. It never buys a bonus.</li>
           <li>A malfunction voids all pays and plays. 18+. Play responsibly.</li>
           <li><button className="pill" onClick={() => setModal('fair')}>Open provably fair</button></li></ul>}</>}
       {modal === 'fair' && <>
         <p>Every result is fixed by seeds before you spin, so you can check any round afterwards.</p>
-        <p className="mut">Round = HMAC SHA256(key = server seed, msg = <code>clientSeed:nonce:block</code>). Spin k of a round reads blocks 12k to 12k+11 (96 floats, big endian u32 divided by 2^32). This is the Housebets House Games scheme. One nonce covers the whole round, free spins included.</p>
+        <details className="tech"><summary>Technical details</summary><p className="mut">Round = HMAC SHA256(key = server seed, msg = <code>clientSeed:nonce:block</code>). Spin k of a round reads blocks 12k to 12k+11 (96 floats, big endian u32 divided by 2^32). One nonce covers the whole round, free spins included.</p></details>
         <label>Active server seed hash</label><code>{hash}</code><label>Next server seed hash</label><code>{nextHash}</code>
         <label>Client seed</label><input value={clientSeed} maxLength={64} disabled={busy} onChange={e => { setClientSeed(e.target.value.replace(/[^\x21-\x7e]/g, '')); setNonce(1); }} />
         <label>Next nonce</label><code>{nonce}</code>
         <button className="pill" disabled={busy} onClick={rotate}>Rotate seed pair and reveal</button>
         {revealed.map((r, i) => <div key={i} className="rev">Seed <code>{r.seed}</code> Client seed {r.clientSeed} · nonces 1 to {r.last}</div>)}
         <Verifier prefill={revealed[0]} />
-        <h3>History</h3><table><thead><tr><th>Nonce</th><th>Type</th><th>Cost</th><th>Win</th></tr></thead>
-          <tbody>{hist.map((h, i) => <tr key={i}><td>{h.nonce}</td><td>{h.buy ? TIERS[h.buy - 1].name : 'Spin'}</td><td>{usd(h.buy ? TIERS[h.buy - 1].buy * h.bet : h.bet)}</td><td>{usd(h.win)}</td></tr>)}</tbody></table></>}
+        <h3>History</h3><div className="tbl"><table><thead><tr><th>Nonce</th><th>Type</th><th>Cost</th><th>Win</th></tr></thead>
+          <tbody>{hist.map((h, i) => <tr key={i}><td>{h.nonce}</td><td>{h.buy ? TIERS[h.buy - 1].name : 'Spin'}</td><td>{usd(h.buy ? TIERS[h.buy - 1].buy * h.bet : h.bet)}</td><td>{usd(h.win)}</td></tr>)}</tbody></table></div></>}
       </div></div></div>}
   </div>;
 }

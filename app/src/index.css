@@ -365,3 +365,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:4px;borde
 .bg,.rain,.sweep,.c-rays,.bw-rays{will-change:transform;backface-visibility:hidden}
 .c-bg{filter:none;opacity:.38}
 .fx{will-change:contents}
+/* ===== v16a rules modal ===== */
+.tabs{display:grid!important;grid-template-columns:repeat(4,1fr);min-height:40px}.tabs button{min-height:36px;white-space:nowrap;font-size:14px}
+.modal .m-body{font-size:15px}.blk span,.exc span,.rules li{font-size:15px;line-height:1.4}.pays{font-size:14px}.mut{font-size:14px}
+.tbl{width:100%;overflow-x:auto}.tbl table{min-width:320px}
+button.pay{color:inherit;font:inherit;border:0;cursor:pointer;text-align:inherit}.pay.on{outline:2px solid var(--gold)}.pay-note{grid-column:1/-1;font-size:13px;color:var(--mut);margin-top:4px;line-height:1.3}
+details.tech summary{cursor:pointer;color:var(--cy);margin:6px 0}
