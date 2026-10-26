@@ -29,7 +29,7 @@ const N = (m: number) => 440 * 2 ** ((m - 69) / 12);
 // Original procedural club groove. A lookahead scheduler books every 16th note against the AudioContext clock,
 // so timing never drifts with the JS timer. Songs are built from 8 bar sections (intro, A, B, breakdown, build, drop)
 // that rotate and mutate with a seeded random generator, so long sessions keep changing.
-const VOICE_CAP = 44; let voices = 0;
+const CAP0 = typeof navigator !== 'undefined' && /Android|iPhone|iPad/.test(navigator.userAgent) ? 40 : 64; let VOICE_CAP = CAP0; let voices = 0;
 /** Polyphony guard: optional notes are skipped when too many voices are alive (keeps mobile CPU low). */
 const room = (need = 1) => voices + need <= VOICE_CAP;
 function tone(freq: number, type: OscillatorType, t0: number, dur: number, vol: number, dest: AudioNode, o2: { glide?: number, att?: number, cut?: number, q?: number, env?: number, det?: number } = {}) {
@@ -208,11 +208,11 @@ export function startAmbient() {
 /** Debug: render a music mode offline and return mono samples (used by the audio sanity test). */
 export async function renderMusic(m: string, secs: number, int = 1) {
   const save = { ctx, master, music, sfxBus, verb, verbIn, duck, L: [...L], nb, mode, song, step, nextT, secIdx, sec, cycle, intensity, seed, heat };
-  const oc = new OfflineAudioContext(2, Math.ceil(44100 * secs), 44100); ctx = oc as unknown as AudioContext; nb = null; buildGraph(oc);
-  mode = ''; setMusicMode(m); intensity = int; nextT = .05; while (nextT < secs) sched(1);
+  VOICE_CAP = 1e9; const oc = new OfflineAudioContext(2, Math.ceil(44100 * secs), 44100); ctx = oc as unknown as AudioContext; nb = null; buildGraph(oc);
+  mode = ''; setMusicMode(m); intensity = int; nextT = .05; sched(secs);
   const buf = await oc.startRendering();
-  Object.assign(globalThis, {}); ctx = save.ctx; master = save.master; music = save.music; sfxBus = save.sfxBus; verb = save.verb; verbIn = save.verbIn; duck = save.duck; L.length = 0; L.push(...save.L); nb = save.nb;
-  mode = save.mode; song = save.song; step = save.step; nextT = save.nextT; secIdx = save.secIdx; sec = save.sec; cycle = save.cycle; intensity = save.intensity; seed = save.seed; heat = save.heat; voices = 0;
+  ctx = save.ctx; master = save.master; music = save.music; sfxBus = save.sfxBus; verb = save.verb; verbIn = save.verbIn; duck = save.duck; L.length = 0; L.push(...save.L); nb = save.nb;
+  mode = save.mode; song = save.song; step = save.step; nextT = save.nextT; secIdx = save.secIdx; sec = save.sec; cycle = save.cycle; intensity = save.intensity; seed = save.seed; heat = save.heat; voices = 0; VOICE_CAP = CAP0;
   const a = buf.getChannelData(0), b = buf.getChannelData(1), out = new Float32Array(a.length); for (let i = 0; i < a.length; i++) out[i] = (a[i] + b[i]) / 2; return out;
 }
 export function setTension(on: boolean) { if (tension && ctx) tension.gain.setTargetAtTime(on ? 0.05 : 0, ctx.currentTime, 0.3); }
