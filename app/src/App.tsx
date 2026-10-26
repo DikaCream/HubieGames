@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { FEAT, playRound, PAYS, PAYING, SYM, NAMES, TIERS, S, MAX_WIN, MULT_CAP, COINS, BASE, type Spin, type Round, type Tier, type Runner } from './engine';
 import { resolveRound, sha256Hex, randomServerSeed, randomClientSeed } from './fair';
-import { sfx, startAmbient, setTension, setMusicOn, setSfxOn, setMusicMode, setIntensity } from './sound';
+import { sfx, startAmbient, setTension, setMusicOn, setSfxOn, setMusicMode, setIntensity, musicHit, renderMusic } from './sound';
 import { FX } from './fx';
 import { ART, ALL_ART } from './art';
 import { Board, wait } from './board';
@@ -162,7 +162,7 @@ export default function App() {
     if (sp.free) setIntensity(sp.meter >= 4 || sp.runners.some(r => r.m >= 8) || sp.spinsLeft === 0 ? 3 : sp.meter >= 2 || sp.runners.some(r => r.m >= 2) ? 2 : 1);
     if (sp.free && sp.meterAdd) { setBonus(bn => bn && { ...bn, meter: sp.meter }); sfx.mult(sp.meter); b.shake(4); await T(400); }
     setWays(sp.ways);
-    const c = Math.round(sp.win * betC);
+    const c = Math.round(sp.win * betC); if (!sp.free) musicHit(sp.win);
     if (c > 0) {
       const ways = sp.wins.map(w => ({ img: w.sym, t: `${NAMES[w.sym].toUpperCase()} ${w.len} REELS`, amt: usd(Math.round(w.pay * betC)) }));
       b.showWins(sp); const big = sp.win >= 5; const dur = sp.win < 1 ? .5 : sp.win < 5 ? .9 : 1.6;
@@ -231,7 +231,7 @@ export default function App() {
       board.current.clearWins(); const t = round.tier; setMsg({ t: `${round.spins[0].keys} KEYS · ${t.name}`, k: 'feat' }); say('bonus', 1600); board.current.shake(8);
       await T(700); await board.current.mystery(round.spins[0], round.marked.sym, round.marked.mult);
       quiet.current = true; setCine({ kind: 'in', tier: t, marked: round.marked }); sfx.bonus(); await mounted(cineTap); await tapOrAuto(3000); setCine(null); quiet.current = false;
-      setBonus({ tier: t, played: 0, total: t.spins, marked: round.marked, runners: [] }); setPose('bonus'); setMusicMode('bonus'); setIntensity(1); board.current.setSkin(true);
+      setBonus({ tier: t, played: 0, total: t.spins, marked: round.marked, runners: [] }); setPose('bonus'); setMusicMode('bonus' + Math.max(0, TIERS.indexOf(t))); setIntensity(1); board.current.setSkin(true);
       const free = round.spins.filter(s => s.free); let first = true;
       for (const sp of free) { await T(200);
         const sc = Math.min(cap - total, await present(sp, false, first)); total += sc; first = false;
@@ -286,7 +286,7 @@ export default function App() {
     } finally { setBusy(false); }
   }
 
-  useEffect(() => { if (FORCE) { const w = window as unknown as Record<string, unknown>; w.__hrDemo = demo; w.__hr = { gsap, board: board.current, fx: fx.current }; } });
+  useEffect(() => { if (FORCE) { const w = window as unknown as Record<string, unknown>; w.__hrDemo = demo; w.__hr = { gsap, board: board.current, fx: fx.current, renderMusic }; } });
   const overlayOn = !!(cine || big);
   return <div className={`app ${SHOWCASE ? 'sc' : ''} ${bonus ? 'bonus' : ''} ${overlayOn ? 'covered' : ''}`}>
     <div className="bg" style={{ ['--bg' as string]: `url(${ART(bonus ? 'bonus_bg' : 'bg')})`, ['--bgt' as string]: `url(${ART(bonus ? 'bonus_bg' : 'bg_tall')})` }} />
